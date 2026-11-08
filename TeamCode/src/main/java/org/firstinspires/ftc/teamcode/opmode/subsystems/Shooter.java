@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opmode.subsystems;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -14,7 +13,6 @@ import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.*;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 import java.util.Arrays;
@@ -22,52 +20,94 @@ import java.util.Arrays;
 @Config
 public class Shooter {
     public HardwareMap hwmap;
-    public DcMotorEx topShooter, bottomShooter;
-    public ServoImplEx hood, stopper;
+    public DcMotorEx nectarShooter, pollenShooter;
+    public ServoImplEx nectarHood, pollenHood, stopper;
     Robot robot;
-    public static int numOfPointsRegression = 8;
-    public static String[] shotPoints = {
+
+    // Shot tables, "distance,velocity". Copied from v1 as a starting point, retune each unit.
+    public static int numOfPointsRegressionNectar = 8;
+    public static String[] shotPointsNectar = {
+            "25,1040", "40,1120", "50,1200", "60,1300", "70,1350", "80,1390", "93,1440", "100,1480",
+            "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
+    };
+    public static int numOfPointsRegressionPollen = 8;
+    public static String[] shotPointsPollen = {
             "25,1040", "40,1120", "50,1200", "60,1300", "70,1350", "80,1390", "93,1440", "100,1480",
             "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
     };
     public static int maxShotCurveDegree = 3;
-    String[] parsedPoints = null;
-    int parsedDegree = -1;
-    PolynomialFunction shotCurve = null;
-    public String shotTableError = "table not parsed yet";
-    public int shotZone = 0;
-    public double launchAngle = 0;
-    public double hoodAngle = 0;
 
-    PIDFController flywheelPIDF;
-    double targetX = 0;
-    double targetY = 0;
-    double targetDist = 0;
-    double currVelocity = 0;
-    double targetVelocity = 0;
-    double velocityError = 0;
+    ShotTable shotTableNectar = new ShotTable();
+    ShotTable shotTablePollen = new ShotTable();
+    public String shotTableErrorNectar = "table not parsed yet";
+    public String shotTableErrorPollen = "table not parsed yet";
+    public int shotZone = 0;
+
+    PIDFController flywheelPIDFNectar, flywheelPIDFPollen;
+
+    public double targetXNectar = 0, targetYNectar = 0, targetDistNectar = 0;
+    public double targetXPollen = 0, targetYPollen = 0, targetDistPollen = 0;
+    public double nectarVelocity = 0, pollenVelocity = 0;
+    public double targetVelocityNectar = 0, targetVelocityPollen = 0;
+    public double velocityErrorNectar = 0, velocityErrorPollen = 0;
+    public double launchAngleNectar = 0, launchAnglePollen = 0;
+    public double hoodAngleNectar = 0, hoodAnglePollen = 0;
+
     VoltageSensor voltageSensor;
     ElapsedTime voltageTimer = new ElapsedTime();
-    double batteryVoltage = nominalVoltage;
-    public double topVelocity = 0;
-    public double bottomVelocity = 0;
-    int lastBottomPos = 0;
-    ElapsedTime bottomTimer = new ElapsedTime();
+    public double batteryVoltage = nominalVoltage;
 
-    void updateBottomVelocity(){
-        int pos = bottomShooter.getCurrentPosition();
-        double dt = bottomTimer.seconds();
-        bottomTimer.reset();
-        double estimate = dt > 0 ? (pos - lastBottomPos) / dt : 0;
-        lastBottomPos = pos;
-        bottomVelocity = inverseOverflow(bottomShooter.getVelocity(), estimate) * bottomEncoderScale;
-    }
+    // One fitted distance -> velocity curve. Re-fits only when the points or degree change.
+    static class ShotTable {
+        String[] parsedPoints = null;
+        int parsedDegree = -1;
+        PolynomialFunction curve = null;
+        String error = "table not parsed yet";
 
-    static double inverseOverflow(double input, double estimate){
-        int real = (int) input & 0xffff;
-        real += ((real % 20) / 4) * 0x10000;
-        real += Math.round((estimate - real) / (5 * 0x10000)) * 5 * 0x10000;
-        return real;
+        void refresh(String[] shotPoints, int numOfPoints, int maxDegree){
+            int count = Math.max(0, Math.min(numOfPoints, shotPoints.length));
+            String[] used = Arrays.copyOf(shotPoints, count);
+            if(Arrays.equals(used, parsedPoints) && maxDegree == parsedDegree){
+                return;
+            }
+            parsedPoints = used;
+            parsedDegree = maxDegree;
+            try{
+                double[] dists = new double[count];
+                double[] vels = new double[count];
+                for (int i = 0; i < count; i++) {
+                    String[] parts = used[i].split(",");
+                    if(parts.length != 2){
+                        throw new IllegalArgumentException("point " + i + " should be distance,velocity but is \"" + used[i] + "\"");
+                    }
+                    dists[i] = Double.parseDouble(parts[0].trim());
+                    vels[i] = Double.parseDouble(parts[1].trim());
+                }
+                if(numOfPoints > count){
+                    throw new IllegalArgumentException("numOfPointsRegression is " + numOfPoints + " but list only holds " + count);
+                }
+                if(count < 2){
+                    throw new IllegalArgumentException("need at least 2 points");
+                }
+                WeightedObservedPoints points = new WeightedObservedPoints();
+                for (int i = 0; i < dists.length; i++) {
+                    points.add(dists[i], vels[i]);
+                }
+                int degree = Math.max(1, Math.min(maxDegree, dists.length - 1));
+                curve = new PolynomialFunction(PolynomialCurveFitter.create(degree).fit(points.toList()));
+                error = null;
+            }catch(Exception e){
+                curve = null;
+                error = e.getMessage();
+            }
+        }
+
+        double speed(double distanceFromTarget){
+            if(error != null){
+                return 0;
+            }
+            return Math.max(0, curve.value(distanceFromTarget));
+        }
     }
 
     void updateBatteryVoltage(){
@@ -84,49 +124,19 @@ public class Shooter {
         return Math.max(-1.0, Math.min(1.0, power * nominalVoltage / batteryVoltage));
     }
 
-    void refreshShotTable(){
-        int count = Math.max(0, Math.min(numOfPointsRegression, shotPoints.length));
-        String[] used = Arrays.copyOf(shotPoints, count);
-        if(Arrays.equals(used, parsedPoints) && maxShotCurveDegree == parsedDegree){
-            return;
-        }
-        parsedPoints = used;
-        parsedDegree = maxShotCurveDegree;
-        try{
-            double[] dists = new double[count];
-            double[] vels = new double[count];
-            for (int i = 0; i < count; i++) {
-                String[] parts = used[i].split(",");
-                if(parts.length != 2){
-                    throw new IllegalArgumentException("point " + i + " should be distance,velocity but is \"" + used[i] + "\"");
-                }
-                dists[i] = Double.parseDouble(parts[0].trim());
-                vels[i] = Double.parseDouble(parts[1].trim());
-            }
-            if(numOfPointsRegression > count){
-                throw new IllegalArgumentException("numOfPointsRegression is " + numOfPointsRegression + " but list only holds " + count);
-            }
-            if(count < 2){
-                throw new IllegalArgumentException("need at least 2 points");
-            }
-            WeightedObservedPoints points = new WeightedObservedPoints();
-            for (int i = 0; i < dists.length; i++) {
-                points.add(dists[i], vels[i]);
-            }
-            int degree = Math.max(1, Math.min(maxShotCurveDegree, dists.length - 1));
-            shotCurve = new PolynomialFunction(PolynomialCurveFitter.create(degree).fit(points.toList()));
-            shotTableError = null;
-        }catch(Exception e){
-            shotCurve = null;
-            shotTableError = e.getMessage();
-        }
+    void refreshShotTables(){
+        shotTableNectar.refresh(shotPointsNectar, numOfPointsRegressionNectar, maxShotCurveDegree);
+        shotTablePollen.refresh(shotPointsPollen, numOfPointsRegressionPollen, maxShotCurveDegree);
+        shotTableErrorNectar = shotTableNectar.error;
+        shotTableErrorPollen = shotTablePollen.error;
     }
 
-    public double calculateShotSpeed(double distanceFromTarget){
-        if(shotTableError != null){
-            return 0;
-        }
-        return Math.max(0, shotCurve.value(distanceFromTarget));
+    public double calculateShotSpeedNectar(double distanceFromTarget){
+        return shotTableNectar.speed(distanceFromTarget);
+    }
+
+    public double calculateShotSpeedPollen(double distanceFromTarget){
+        return shotTablePollen.speed(distanceFromTarget);
     }
 
     double entryLaunchAngle(double d){
@@ -148,32 +158,60 @@ public class Shooter {
         return closeLaunchAngle + (thresholdAngle - closeLaunchAngle) * t;
     }
 
-    public double calculateHoodPosition(double distanceFromTarget){
-        launchAngle = calculateLaunchAngle(distanceFromTarget);
-        hoodAngle = Math.max(hoodMinAngle, Math.min(hoodMaxAngle, 90 - launchAngle));
+    // hood angle (deg) for a launch angle, clamped to what the hood can do
+    double hoodAngleFor(double launchAngle){
+        return Math.max(hoodMinAngle, Math.min(hoodMaxAngle, 90 - launchAngle));
+    }
+
+    // servo position for a hood angle, using that hood's endpoints
+    double hoodServoPosition(double hoodAngle, double hoodUp, double hoodDown){
         double t = (hoodAngle - hoodMinAngle) / (hoodMaxAngle - hoodMinAngle);
         return hoodDown + t * (hoodUp - hoodDown);
     }
 
-    public double calculateTargetDist(Pose2D pos){
-        double robotX = pos.getX(DistanceUnit.INCH);
-        double robotY = pos.getY(DistanceUnit.INCH);
-        double[] goal = robot.turret.calculateGoalPos(pos);
-        targetX = goal[0];
-        targetY = goal[1];
-        return Math.hypot(targetX - robotX, targetY - robotY);
+    // Distance from each turret to the goal. Pose is the robot center (field-centered inches).
+    void calculateTargetDists(Pose2D pos){
+        double[] goal = robot.nectarTurret.calculateGoalPos(pos);
+        double[] nectarPos = robot.nectarTurret.calculateTurretPos(pos);
+        double[] pollenPos = robot.pollenTurret.calculateTurretPos(pos);
+        setTargets(goal, nectarPos, pollenPos);
     }
 
-    public double calculateTargetDist(double robotX, double robotY){
-        robotX -= 72;
-        robotY -= 72;
-        double[] goal = robot.turret.calculateGoalPos(robotY + 72); // calculateGoalPos does its own -72
-        targetX = goal[0];
-        targetY = goal[1];
-        return Math.hypot(targetX - robotX, targetY - robotY);
+    // Same, but robotX/robotY in raw pedro coords (0-144), heading in degrees
+    public void calculateTargetDists(double robotX, double robotY, double headingDeg){
+        double[] goal = robot.nectarTurret.calculateGoalPos(robotY);
+        double[] nectarPos = robot.nectarTurret.calculateTurretPos(robotX - 72, robotY - 72, headingDeg);
+        double[] pollenPos = robot.pollenTurret.calculateTurretPos(robotX - 72, robotY - 72, headingDeg);
+        setTargets(goal, nectarPos, pollenPos);
     }
 
+    void setTargets(double[] goal, double[] nectarPos, double[] pollenPos){
+        targetXNectar = goal[0];
+        targetYNectar = goal[1];
+        targetXPollen = goal[0];
+        targetYPollen = goal[1];
+        targetDistNectar = Math.hypot(goal[0] - nectarPos[0], goal[1] - nectarPos[1]);
+        targetDistPollen = Math.hypot(goal[0] - pollenPos[0], goal[1] - pollenPos[1]);
+    }
 
+    // One PIDF step for one flywheel. Returns the voltage-compensated power it sent.
+    double runFlywheel(PIDFController pid, DcMotorEx motor, double currentVelocity, double targetVelocity,
+                       double kP, double kI, double kD, double kS, double kV){
+        //re-read gains every loop so FTC Dashboard edits apply live
+        pid.setPID(kP, kI, kD);
+        pid.setFeedforward(kS, kV);
+        pid.setMaxIntegralPower(maxIntegralPower);
+        pid.setTargetVelocity(targetVelocity);
+        double power = compensateVoltage(pid.update(currentVelocity));
+        motor.setPower(power);
+        return power;
+    }
+
+    void stopFlywheel(PIDFController pid, DcMotorEx motor){
+        pid.reset();
+        pid.setTargetVelocity(0);
+        motor.setPower(0);
+    }
 
     public Shooter(HardwareMap hwmap, Robot robot){
         this.hwmap = hwmap;
@@ -189,21 +227,25 @@ public class Shooter {
     }
 
     public void init(){
-        topShooter = hwmap.get(DcMotorEx.class, "topShooter");
-        bottomShooter = hwmap.get(DcMotorEx.class, "bottomShooter");
-        hood = hwmap.get(ServoImplEx.class, "hood");
+        nectarShooter = hwmap.get(DcMotorEx.class, "nectarShooter");
+        pollenShooter = hwmap.get(DcMotorEx.class, "pollenShooter");
+        nectarHood = hwmap.get(ServoImplEx.class, "nectarHood");
+        pollenHood = hwmap.get(ServoImplEx.class, "pollenHood");
         stopper = hwmap.get(ServoImplEx.class, "stopper");
-        flywheelPIDF = new PIDFController(0, kP, kI, kD, kS, kV);
+        flywheelPIDFNectar = new PIDFController(0, kPNectar, kINectar, kDNectar, kSNectar, kVNectar);
+        flywheelPIDFPollen = new PIDFController(0, kPPollen, kIPollen, kDPollen, kSPollen, kVPollen);
         voltageSensor = hwmap.voltageSensor.iterator().next();
         batteryVoltage = voltageSensor.getVoltage();
         if(batteryVoltage <= 0){
             batteryVoltage = nominalVoltage;
         }
         voltageTimer.reset();
-        lastBottomPos = bottomShooter.getCurrentPosition();
-        bottomTimer.reset();
-        topShooter.setDirection(DcMotorSimple.Direction.REVERSE);
-        hood.setPosition(hoodUp);
+        // TODO: check on the robot that positive power spins each flywheel the shooting way,
+        //  and flip these if not. getVelocity() follows this direction, so no manual negation.
+        nectarShooter.setDirection(DcMotorSimple.Direction.FORWARD);
+        pollenShooter.setDirection(DcMotorSimple.Direction.FORWARD);
+        nectarHood.setPosition(hoodUpNectar);
+        pollenHood.setPosition(hoodUpPollen);
     }
 
     public void initLoop(){
@@ -218,91 +260,84 @@ public class Shooter {
 
     }
 
-    public void update(boolean aim){
-        //re-read gains every loop so FTC Dashboard edits apply live
-        flywheelPIDF.setPID(kP, kI, kD);
-        flywheelPIDF.setFeedforward(kS, kV);
-        flywheelPIDF.setMaxIntegralPower(maxIntegralPower);
-
-        refreshShotTable();
-        updateBatteryVoltage();
-
-        //target and distance are always calculated so they show in telemetry
-        targetDist = calculateTargetDist(robot.dt.getRobotPos());
-        topVelocity = -topShooter.getVelocity();
-        updateBottomVelocity();
-        currVelocity = bottomVelocity;
-
-        boolean tableOk = shotTableError == null;
-        if(robot.testingShooter){
-            hood.setPosition(robot.hoodPositionTesting);
-        }else if(aim){
-            hood.setPosition(calculateHoodPosition(targetDist));
-        }else{
-            hood.setPosition(hoodUp);
-        }
-
-        if(aim && (robot.testingShooter || tableOk)){
-            if(robot.testingShooter){
-                targetVelocity = robot.flywheelSpeedTesting;
-            }else{
-                targetVelocity = Math.max(0, calculateShotSpeed(targetDist) + robot.powerAdjustment);
-            }
-            flywheelPIDF.setTargetVelocity(targetVelocity);
-            double PIDOutputPower = compensateVoltage(flywheelPIDF.update(currVelocity));
-            topShooter.setPower(PIDOutputPower);
-            bottomShooter.setPower(PIDOutputPower);
-        }else{
-            targetVelocity = 0;
-            flywheelPIDF.reset();
-            flywheelPIDF.setTargetVelocity(0);
-            topShooter.setPower(0);
-            bottomShooter.setPower(0);
-        }
-        velocityError = currVelocity - targetVelocity;
-
+    // Sets both hoods from the current target distances
+    void aimHoods(){
+        launchAngleNectar = calculateLaunchAngle(targetDistNectar);
+        launchAnglePollen = calculateLaunchAngle(targetDistPollen);
+        hoodAngleNectar = hoodAngleFor(launchAngleNectar);
+        hoodAnglePollen = hoodAngleFor(launchAnglePollen);
+        nectarHood.setPosition(hoodServoPosition(hoodAngleNectar, hoodUpNectar, hoodDownNectar));
+        pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
     }
 
-    public void update(double robotX, double robotY){
-        //re-read gains every loop so FTC Dashboard edits apply live
-        flywheelPIDF.setPID(kP, kI, kD);
-        flywheelPIDF.setFeedforward(kS, kV);
-        flywheelPIDF.setMaxIntegralPower(maxIntegralPower);
+    // Runs both flywheels at their target velocities, or stops them
+    void runFlywheels(boolean spin, double testingVelocity){
+        if(spin && (robot.testingShooter || shotTableErrorNectar == null)){
+            targetVelocityNectar = robot.testingShooter ? testingVelocity
+                    : Math.max(0, calculateShotSpeedNectar(targetDistNectar) + robot.powerAdjustment);
+            runFlywheel(flywheelPIDFNectar, nectarShooter, nectarVelocity, targetVelocityNectar,
+                    kPNectar, kINectar, kDNectar, kSNectar, kVNectar);
+        }else{
+            targetVelocityNectar = 0;
+            stopFlywheel(flywheelPIDFNectar, nectarShooter);
+        }
 
-        refreshShotTable();
+        if(spin && (robot.testingShooter || shotTableErrorPollen == null)){
+            targetVelocityPollen = robot.testingShooter ? testingVelocity
+                    : Math.max(0, calculateShotSpeedPollen(targetDistPollen) + robot.powerAdjustment);
+            runFlywheel(flywheelPIDFPollen, pollenShooter, pollenVelocity, targetVelocityPollen,
+                    kPPollen, kIPollen, kDPollen, kSPollen, kVPollen);
+        }else{
+            targetVelocityPollen = 0;
+            stopFlywheel(flywheelPIDFPollen, pollenShooter);
+        }
+
+        velocityErrorNectar = nectarVelocity - targetVelocityNectar;
+        velocityErrorPollen = pollenVelocity - targetVelocityPollen;
+    }
+
+    void readVelocities(){
+        nectarVelocity = nectarShooter.getVelocity();
+        pollenVelocity = pollenShooter.getVelocity();
+    }
+
+    public void update(boolean aim){
+        refreshShotTables();
         updateBatteryVoltage();
 
         //target and distance are always calculated so they show in telemetry
-        targetDist = calculateTargetDist(robotX, robotY);
-        topVelocity = -topShooter.getVelocity();
-        updateBottomVelocity();
-        currVelocity = bottomVelocity;
+        calculateTargetDists(robot.dt.getRobotPos());
+        readVelocities();
 
-        boolean tableOk = shotTableError == null;
         if(robot.testingShooter){
-            hood.setPosition(robot.hoodPositionTesting);
+            nectarHood.setPosition(robot.hoodPositionTesting);
+            pollenHood.setPosition(robot.hoodPositionTesting);
+        }else if(aim){
+            aimHoods();
         }else{
-            hood.setPosition(calculateHoodPosition(targetDist));
+            nectarHood.setPosition(hoodUpNectar);
+            pollenHood.setPosition(hoodUpPollen);
         }
 
-        if((robot.testingShooter || tableOk)){
-            if(robot.testingShooter){
-                targetVelocity = robot.flywheelSpeedTesting - 60;
-            }else{
-                targetVelocity = Math.max(0, calculateShotSpeed(targetDist) + robot.powerAdjustment);
-            }
-            flywheelPIDF.setTargetVelocity(targetVelocity);
-            double PIDOutputPower = compensateVoltage(flywheelPIDF.update(currVelocity));
-            topShooter.setPower(PIDOutputPower);
-            bottomShooter.setPower(PIDOutputPower);
-        }else{
-            targetVelocity = 0;
-            flywheelPIDF.reset();
-            flywheelPIDF.setTargetVelocity(0);
-            topShooter.setPower(0);
-            bottomShooter.setPower(0);
-        }
-        velocityError = currVelocity - targetVelocity;
+        runFlywheels(aim, robot.flywheelSpeedTesting);
+    }
 
+    // Auto: robotX/robotY in raw pedro coords (0-144), heading in degrees
+    public void update(double robotX, double robotY, double headingDeg){
+        refreshShotTables();
+        updateBatteryVoltage();
+
+        //target and distance are always calculated so they show in telemetry
+        calculateTargetDists(robotX, robotY, headingDeg);
+        readVelocities();
+
+        if(robot.testingShooter){
+            nectarHood.setPosition(robot.hoodPositionTesting);
+            pollenHood.setPosition(robot.hoodPositionTesting);
+        }else{
+            aimHoods();
+        }
+
+        runFlywheels(true, robot.flywheelSpeedTesting - 60);
     }
 }

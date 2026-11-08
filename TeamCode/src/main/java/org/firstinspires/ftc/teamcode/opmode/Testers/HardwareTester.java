@@ -23,8 +23,10 @@ import java.util.List;
 // Servos are never commanded until you press A, so nothing moves on init/start.
 @TeleOp(name = "Hardware Tester", group = "Test")
 public class HardwareTester extends OpMode {
-    static final String[] MOTOR_NAMES = {"LF", "RF", "LB", "RB", "leftIntake", "rightIntake", "topShooter", "bottomShooter"};
-    static final String[] SERVO_NAMES = {"dropdownIntake", "flowerIntake", "hood", "stopper", "leftTurret", "rightTurret"};
+    static final String[] MOTOR_NAMES = {"LF", "RF", "LB", "RB", "leftIntake", "rightIntake", "nectarShooter", "pollenShooter"};
+    static final String[] SERVO_NAMES = {"flowerIntake", "stopper",
+            "nectarHood", "frontTurretNectar", "backTurretNectar",
+            "pollenHood", "frontTurretPollen", "backTurretPollen"};
     static final double[] STEP_SIZES = {0.1, 0.01, 0.001};
 
     Drivetrain dt;

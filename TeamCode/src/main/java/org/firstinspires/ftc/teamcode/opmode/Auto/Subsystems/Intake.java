@@ -3,20 +3,17 @@ package org.firstinspires.ftc.teamcode.opmode.Auto.Subsystems;
 import static com.pedropathing.ivy.commands.Commands.waitMs;
 
 import com.pedropathing.ivy.Command;
-import com.qualcomm.robotcore.hardware.CRServoImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.*;
 
-import org.firstinspires.ftc.teamcode.opmode.subsystems.Constants;
-
 public class Intake {
 
     public HardwareMap hwmap;
     public DcMotorEx leftIntake, rightIntake;
-    public ServoImplEx dropdownIntake, flowerIntake;
+    public ServoImplEx flowerIntake;
     public ServoImplEx stopper;
 
     public Intake (HardwareMap hardwareMap) {
@@ -25,7 +22,6 @@ public class Intake {
 
         leftIntake = hwmap.get(DcMotorEx.class, "leftIntake");
         rightIntake = hwmap.get(DcMotorEx.class, "rightIntake");
-        dropdownIntake = hwmap.get(ServoImplEx.class, "dropdownIntake");
         flowerIntake = hwmap.get(ServoImplEx.class, "flowerIntake");
         stopper = hwmap.get(ServoImplEx.class, "stopper");
         leftIntake.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -37,9 +33,16 @@ public class Intake {
         leftIntake.setPower(0.0);
         rightIntake.setPower(0.0);
 
-        dropdownIntake.setPosition(dropDownIntakeUp);
         flowerIntake.setPosition(flowerIntakeUp);
 
+    }
+
+    void release() {
+        stopper.setPosition(releaseBall);
+    }
+
+    void block() {
+        stopper.setPosition(blockBall);
     }
 
     public Command intakeOn() {
@@ -66,37 +69,14 @@ public class Intake {
 
     }
 
-    public Command intakeDown() {
-
-        return Command.build()
-                .setStart(() -> {
-                    dropdownIntake.setPosition(dropDownIntakeDown);
-                })
-                .setDone(() -> true)
-                .requiring(dropdownIntake);
-
-    }
-
-    public Command intakeUp() {
-
-        return Command.build()
-                .setStart(() -> {
-                    dropdownIntake.setPosition(dropDownIntakeUp);
-                })
-                .setDone(() -> true)
-                .requiring(dropdownIntake);
-
-    }
-
     public Command flowerDown() {
 
         return Command.build()
                 .setStart(() -> {
-                    dropdownIntake.setPosition(dropDownIntakeFlower);
                     flowerIntake.setPosition(flowerIntakeDown);
                 })
                 .setDone(() -> true)
-                .requiring(dropdownIntake, flowerIntake);
+                .requiring(flowerIntake);
 
     }
 
@@ -107,19 +87,7 @@ public class Intake {
                     flowerIntake.setPosition(flowerIntakeUp);
                 })
                 .setDone(() -> true)
-                .requiring(dropdownIntake, flowerIntake);
-
-    }
-
-    public Command flowerAndIntakeUp() {
-
-        return Command.build()
-                .setStart(() -> {
-                    dropdownIntake.setPosition(dropDownIntakeUp);
-                    flowerIntake.setPosition(flowerIntakeUp);
-                })
-                .setDone(() -> true)
-                .requiring(dropdownIntake, flowerIntake);
+                .requiring(flowerIntake);
 
     }
 
@@ -129,7 +97,7 @@ public class Intake {
                 .setStart(() -> {
                     leftIntake.setPower(transferSpeedAuto);
                     rightIntake.setPower(transferSpeedAuto);
-                    stopper.setPosition(releaseBall);
+                    release();
                 })
                 .setDone(() -> true)
                 .requiring(leftIntake, rightIntake, stopper);
@@ -143,7 +111,7 @@ public class Intake {
                     leftIntake.setPower(0.0);
                     rightIntake.setPower(0.0);
                     waitMs(200);
-                    stopper.setPosition(blockBall);
+                    block();
                 })
                 .setDone(() -> true)
                 .requiring(leftIntake, rightIntake, stopper);
@@ -153,9 +121,7 @@ public class Intake {
     public Command openGate() {
 
         return Command.build()
-                .setStart(() -> {
-                    stopper.setPosition(releaseBall);
-                })
+                .setStart(this::release)
                 .setDone(() -> true)
                 .requiring(stopper);
 
@@ -164,9 +130,7 @@ public class Intake {
     public Command closeGate() {
 
         return Command.build()
-                .setStart(() -> {
-                    stopper.setPosition(blockBall);
-                })
+                .setStart(this::block)
                 .setDone(() -> true)
                 .requiring(stopper);
 

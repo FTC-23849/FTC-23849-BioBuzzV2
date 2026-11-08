@@ -7,9 +7,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.powerAdjustmentStep;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretAdjustmentStep;
-import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretBackCenterPos;
+import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretBackCenterPosNectar;
 
-import org.firstinspires.ftc.teamcode.opmode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Misc;
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
 //testing commit
@@ -17,7 +16,7 @@ import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
 @TeleOp(name = "Main TeleOp")
 public class MainTeleOp extends OpMode {
     private Robot robot;
-    public static double turretPositionTesting = turretBackCenterPos;
+    public static double turretPositionTesting = turretBackCenterPosNectar;
     public static double flywheelSpeedTesting = 1200;
     public static double hoodPositionTesting = 0.25;
     public static boolean showServoStates = false;
@@ -87,9 +86,9 @@ public class MainTeleOp extends OpMode {
         robot.addTelemetry();
         telemetry.addData("cfg flywheelSpeedTesting", flywheelSpeedTesting);
         if(showServoStates){
-            telemetry.addData("Dropdown intake servo pos", robot.intake.dropdownIntake.getPosition());
             telemetry.addData("Flower intake servo pos", robot.intake.flowerIntake.getPosition());
-            telemetry.addData("Hood servo pos", robot.shooter.hood.getPosition());
+            telemetry.addData("Nectar hood servo pos", robot.shooter.nectarHood.getPosition());
+            telemetry.addData("Pollen hood servo pos", robot.shooter.pollenHood.getPosition());
             telemetry.addData("Stopper servo pos", robot.shooter.stopper.getPosition());
         }
         telemetry.addData("Current log", robot.misc.logStatus);
@@ -113,19 +112,15 @@ public class MainTeleOp extends OpMode {
             //shoot, so stop blocking and run transfer
             robot.intake.transferBalls();
         }else if(gamepad1.right_trigger > 0.7){
-            //run intake with dropdown intake down
-            robot.intake.runIntake(Intake.IntakeState.DOWN);
-        } else if(gamepad1.right_bumper){
-            //run intake without dropdown, maybe do toggle?
-            robot.intake.runIntake(Intake.IntakeState.UP);
+            //run intake
+            robot.intake.runIntake();
         }else if(gamepad1.left_bumper){
-            //run intake with dropdown intake down and flower intake down
-            robot.intake.runIntake(Intake.IntakeState.FLOWER);
+            //run intake with flower intake down (flower lowered below)
+            robot.intake.runIntake();
         }else if(gamepad1.a){
+            //run intake in reverse
             robot.intake.reverseIntake();
-            //run intake in reverse, without changing position of dropdown??
         }else{
-            robot.intake.dropdownUp();
             robot.intake.stopIntake();
             robot.intake.flowerIntakeUp();
             robot.shooter.block();

@@ -44,7 +44,7 @@ public class AutoRobot {
                 waitMs(AutoConstants.LEAVE_FLOWER_UP_DELAY),
                 intake.flowerUp(),
                 waitMs(200),
-                intake.intakeDown()
+                intake.intakeOn()
         );
 
     }
@@ -53,7 +53,7 @@ public class AutoRobot {
 
         return parallel(
                 follow(follower, path),
-                intake.intakeDown()
+                intake.intakeOn()
         );
 
     }
@@ -67,14 +67,14 @@ public class AutoRobot {
 
     }
 
-    // Same as followAndIntake, but drops the intake delay ms after the path starts
+    // Same as followAndIntake, but turns the intake on delay ms after the path starts
     public Command followAndIntake(Path path, double delay) {
 
         return parallel(
                 follow(follower, path),
                 sequential(
                         waitMs(delay),
-                        intake.intakeDown()
+                        intake.intakeOn()
                 )
         );
 

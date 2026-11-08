@@ -39,7 +39,7 @@ public class Misc {
     public Limelight3A limelight;
     Robot robot;
 
-    public static final String[] MOTOR_NAMES = {"LF", "RF", "LB", "RB", "leftIntake", "rightIntake", "topShooter", "bottomShooter"};
+    public static final String[] MOTOR_NAMES = {"LF", "RF", "LB", "RB", "leftIntake", "rightIntake", "nectarShooter", "pollenShooter"};
     public double[] currents = new double[MOTOR_NAMES.length];
     public boolean logging = logTele;
     public boolean showCurrentDraw = false;
@@ -77,7 +77,7 @@ public class Misc {
     DcMotorEx[] motors(){
         return new DcMotorEx[]{robot.dt.LF, robot.dt.RF, robot.dt.LB, robot.dt.RB,
                 robot.intake.leftIntake, robot.intake.rightIntake,
-                robot.shooter.topShooter, robot.shooter.bottomShooter};
+                robot.shooter.nectarShooter, robot.shooter.pollenShooter};
     }
 
     void readCurrents(){
@@ -111,7 +111,8 @@ public class Misc {
             for (String name : MOTOR_NAMES) {
                 header.append(',').append(name).append("_amps");
             }
-            header.append(",distance_from_goal,flywheel_target_velocity");
+            header.append(",nectar_distance_from_goal,nectar_flywheel_target_velocity");
+            header.append(",pollen_distance_from_goal,pollen_flywheel_target_velocity");
             writer.write(header.toString());
             writer.newLine();
             writer.flush();
@@ -129,8 +130,10 @@ public class Misc {
         for (double amps : currents) {
             line.append(',').append(String.format(Locale.US, "%.3f", amps));
         }
-        line.append(',').append(String.format(Locale.US, "%.2f", robot.shooter.targetDist));
-        line.append(',').append(String.format(Locale.US, "%.1f", robot.shooter.targetVelocity));
+        line.append(',').append(String.format(Locale.US, "%.2f", robot.shooter.targetDistNectar));
+        line.append(',').append(String.format(Locale.US, "%.1f", robot.shooter.targetVelocityNectar));
+        line.append(',').append(String.format(Locale.US, "%.2f", robot.shooter.targetDistPollen));
+        line.append(',').append(String.format(Locale.US, "%.1f", robot.shooter.targetVelocityPollen));
         try{
             writer.write(line.toString());
             writer.newLine();

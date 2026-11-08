@@ -110,7 +110,7 @@ public class PathSelector {
 
     // Drive to the next pickup and get the mechanism ready on the way:
     // toFlower = true  -> flower down (followAndFlower)
-    // toFlower = false -> intake down (followAndIntake)
+    // toFlower = false -> intake on (followAndIntake)
     public Command toPickup(Path fromPrimary, Path fromSecondary, boolean toFlower) {
         return lazy(() -> {
             Path path = atPrimarySpot ? fromPrimary : fromSecondary;
@@ -129,7 +129,7 @@ public class PathSelector {
     }
 
     // Park from whichever spot we're at. parkRight = true -> right park, false -> left park.
-    // Also turns the intake off and raises both the intake and the flower intake.
+    // Also turns the intake off and raises the flower intake.
     public Command park(Path primaryToRight, Path primaryToLeft,
                         Path secondaryToRight, Path secondaryToLeft,
                         boolean parkRight) {
@@ -144,27 +144,27 @@ public class PathSelector {
             return parallel(
                     follow(follower, path),
                     intake.intakeOff(),
-                    intake.flowerAndIntakeUp()
+                    intake.flowerUp()
             );
         });
     }
 
     // Park when you know the robot is only ever coming from one place:
     // just give the right and left park paths from there.
-    // Also turns the intake off and raises both the intake and the flower intake.
+    // Also turns the intake off and raises the flower intake.
     public Command park(Path toRight, Path toLeft, boolean parkRight) {
         return lazy(() -> {
             parkStarted = true;
             return parallel(
                     follow(follower, parkRight ? toRight : toLeft),
                     intake.intakeOff(),
-                    intake.flowerAndIntakeUp()
+                    intake.flowerUp()
             );
         });
     }
 
     // Out of time: drive straight from wherever the robot is to the closer shooting spot,
-    // then park from there. Intake goes off and both intakes come up right away so nothing
+    // then park from there. Intake goes off and the flower comes up right away so nothing
     // is hanging down while it drives.
     public Command timeoutPark(Pose primary, Pose secondary,
                                Path primaryToRight, Path primaryToLeft,
@@ -188,7 +188,7 @@ public class PathSelector {
                     parallel(
                             toSpot,
                             intake.intakeOff(),
-                            intake.flowerAndIntakeUp()
+                            intake.flowerUp()
                     ),
                     park(primaryToRight, primaryToLeft, secondaryToRight, secondaryToLeft, parkRight)
             );

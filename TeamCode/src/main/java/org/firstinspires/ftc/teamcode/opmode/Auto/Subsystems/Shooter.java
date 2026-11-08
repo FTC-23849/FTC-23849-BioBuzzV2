@@ -9,18 +9,22 @@ import org.firstinspires.ftc.teamcode.opmode.subsystems.Turret;
 public class Shooter {
 
     private final org.firstinspires.ftc.teamcode.opmode.subsystems.Shooter shooter;
-    private final Turret turret;
+    private final Turret nectarTurret, pollenTurret;
     private final Misc misc;
 
+    // Uses the robot's own shooter and turrets, since the shooter needs the turrets'
+    // positions to work out each shooter's distance to the goal
     public Shooter(HardwareMap hwmap, Robot robot) {
-        this.shooter = new org.firstinspires.ftc.teamcode.opmode.subsystems.Shooter(hwmap, robot);
-        this.turret = new Turret(hwmap, robot);
+        this.shooter = robot.shooter;
+        this.nectarTurret = robot.nectarTurret;
+        this.pollenTurret = robot.pollenTurret;
         this.misc = new Misc(hwmap);
     }
 
     public void init() {
         shooter.init();
-        turret.init();
+        nectarTurret.init();
+        pollenTurret.init();
         misc.init();
         misc.start();
     }
@@ -31,62 +35,81 @@ public class Shooter {
 
     }
 
-    public double getTopMotorSpeed() {
-
-        return shooter.topShooter.getVelocity();
-
+    public double getNectarMotorSpeed() {
+        return shooter.nectarShooter.getVelocity();
     }
 
-    public double getBottomMotorSpeed() {
-
-        return shooter.bottomShooter.getVelocity();
-
+    public double getPollenMotorSpeed() {
+        return shooter.pollenShooter.getVelocity();
     }
 
-    public double getTopMotorPower() {
-        return shooter.topShooter.getPower();
+    public double getNectarMotorPower() {
+        return shooter.nectarShooter.getPower();
     }
 
-    public double getBottomMotorPower() {
-        return shooter.bottomShooter.getPower();
+    public double getPollenMotorPower() {
+        return shooter.pollenShooter.getPower();
     }
 
-    // Same distance the flywheel/hood use (calls the opmode Shooter's own method)
-    public double getTargetDistance(double robotX, double robotY) {
-        return shooter.calculateTargetDist(robotX, robotY);
+    // Same distances the flywheels/hoods use (robotX/robotY raw pedro coords, heading in degrees)
+    public double getNectarTargetDistance(double robotX, double robotY, double headingDeg) {
+        shooter.calculateTargetDists(robotX, robotY, headingDeg);
+        return shooter.targetDistNectar;
     }
 
-    // Same velocity lookup the flywheel uses for a given distance
-    public double getTargetVelocity(double targetDistance) {
-        return shooter.calculateShotSpeed(targetDistance);
+    public double getPollenTargetDistance(double robotX, double robotY, double headingDeg) {
+        shooter.calculateTargetDists(robotX, robotY, headingDeg);
+        return shooter.targetDistPollen;
+    }
+
+    // Same velocity lookups the flywheels use for a given distance
+    public double getNectarTargetVelocity(double targetDistance) {
+        return shooter.calculateShotSpeedNectar(targetDistance);
+    }
+
+    public double getPollenTargetVelocity(double targetDistance) {
+        return shooter.calculateShotSpeedPollen(targetDistance);
     }
 
     public int getShotZone() {
         return shooter.shotZone + 1;
     }
 
-    public String getShotTableError() {
-        return shooter.shotTableError;
+    public String getShotTableErrorNectar() {
+        return shooter.shotTableErrorNectar;
     }
 
-    public double getHoodPosition() {
-        return shooter.hood.getPosition();
+    public String getShotTableErrorPollen() {
+        return shooter.shotTableErrorPollen;
     }
 
-    public double getTurretServoPosition() {
-        return turret.leftTurret.getPosition();
+    public double getNectarHoodPosition() {
+        return shooter.nectarHood.getPosition();
     }
 
-    // Goal the turret is aiming at (raw field coords in)
+    public double getPollenHoodPosition() {
+        return shooter.pollenHood.getPosition();
+    }
+
+    public double getNectarTurretServoPosition() {
+        return nectarTurret.frontTurret.getPosition();
+    }
+
+    public double getPollenTurretServoPosition() {
+        return pollenTurret.frontTurret.getPosition();
+    }
+
+    // Goal the turrets are aiming at (raw field coords in)
     public double[] getTurretGoal(double robotY) {
-        return turret.calculateGoalPos(robotY);
+        return nectarTurret.calculateGoalPos(robotY);
     }
 
     public void updateTurret(double robotX, double robotY, double robotAngleUnsigned) {
-        turret.update(robotX, robotY, robotAngleUnsigned);
+        nectarTurret.update(robotX, robotY, robotAngleUnsigned);
+        pollenTurret.update(robotX, robotY, robotAngleUnsigned);
     }
 
-    public void updateFlywheel(double robotX, double robotY) {
-        shooter.update(robotX, robotY);
+    public void updateFlywheel(double robotX, double robotY, double headingDeg) {
+        shooter.update(robotX, robotY, headingDeg);
     }
 }

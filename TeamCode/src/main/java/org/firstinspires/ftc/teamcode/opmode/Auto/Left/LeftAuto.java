@@ -145,46 +145,46 @@ public class LeftAuto extends OpMode {
         follower.update();
         Scheduler.execute();
 
-        shooter.updateFlywheel(follower.pose().x(), follower.pose().y());
-        shooter.updateTurret(follower.pose().x(), follower.pose().y(), Math.toDegrees(follower.pose().heading()));
-
         double x = follower.pose().x();
         double y = follower.pose().y();
+        double heading = Math.toDegrees(follower.pose().heading());
 
-        // Shooter: what the flywheel/hood are actually using
-        double targetDist = shooter.getTargetDistance(x, y);
-        double targetVel = shooter.getTargetVelocity(targetDist);
-        double bottomVel = shooter.getBottomMotorSpeed(); // PIDF feedback motor
-        double topVel = shooter.getTopMotorSpeed();
+        shooter.updateFlywheel(x, y, heading);
+        shooter.updateTurret(x, y, heading);
 
-        // Cross-check: distance to the goal the TURRET is aiming at
+        // Shooter: what the flywheels/hoods are actually using
+        double nectarDist = shooter.getNectarTargetDistance(x, y, heading);
+        double pollenDist = shooter.getPollenTargetDistance(x, y, heading);
+        double nectarTargetVel = shooter.getNectarTargetVelocity(nectarDist);
+        double pollenTargetVel = shooter.getPollenTargetVelocity(pollenDist);
+        double nectarVel = shooter.getNectarMotorSpeed();
+        double pollenVel = shooter.getPollenMotorSpeed();
         double[] turretGoal = shooter.getTurretGoal(y);
-        double distToTurretGoal = Math.hypot(turretGoal[0] - (x - 72), turretGoal[1] - (y - 72)) + 6;
 
         telemetry.addLine("--- Pose ---");
         telemetry.addData("X", x);
         telemetry.addData("Y", y);
-        telemetry.addData("Heading", Math.toDegrees(follower.pose().heading()));
+        telemetry.addData("Heading", heading);
         telemetry.addData("Follower Mode", follower.mode());
         telemetry.addData("Path completion", follower.completion());
         telemetry.addData("Distance remaining in path", follower.remainingDistance());
 
-        telemetry.addLine("--- Flywheel ---");
-        telemetry.addData("Target velocity", targetVel);
-        telemetry.addData("Bottom velocity (PIDF)", bottomVel);
-        telemetry.addData("Top velocity", topVel);
-        telemetry.addData("Error (bottom - target)", bottomVel - targetVel);
-        telemetry.addData("Top/bottom mismatch", topVel - bottomVel);
-        telemetry.addData("Motor power (top/bottom)", "%.2f / %.2f", shooter.getTopMotorPower(), shooter.getBottomMotorPower());
+        telemetry.addLine("--- Flywheels ---");
+        telemetry.addData("Nectar velocity / target", "%.0f / %.0f", nectarVel, nectarTargetVel);
+        telemetry.addData("Pollen velocity / target", "%.0f / %.0f", pollenVel, pollenTargetVel);
+        telemetry.addData("Nectar error", nectarVel - nectarTargetVel);
+        telemetry.addData("Pollen error", pollenVel - pollenTargetVel);
+        telemetry.addData("Motor power (nectar/pollen)", "%.2f / %.2f", shooter.getNectarMotorPower(), shooter.getPollenMotorPower());
 
         telemetry.addLine("--- Shot ---");
-        telemetry.addData("Shooter target distance", targetDist);
-        telemetry.addData("Dist to turret's goal", distToTurretGoal);
         telemetry.addData("Turret goal (x, y)", "%.1f, %.1f", turretGoal[0], turretGoal[1]);
+        telemetry.addData("Nectar target distance", nectarDist);
+        telemetry.addData("Pollen target distance", pollenDist);
         telemetry.addData("Shot zone", shooter.getShotZone());
-        telemetry.addData("Hood position", shooter.getHoodPosition());
-        telemetry.addData("Shot table error", shooter.getShotTableError());
-        telemetry.addData("Turret servo pos", shooter.getTurretServoPosition());
+        telemetry.addData("Hood position (nectar/pollen)", "%.3f / %.3f", shooter.getNectarHoodPosition(), shooter.getPollenHoodPosition());
+        telemetry.addData("Shot table error nectar", shooter.getShotTableErrorNectar());
+        telemetry.addData("Shot table error pollen", shooter.getShotTableErrorPollen());
+        telemetry.addData("Turret servo pos (nectar/pollen)", "%.3f / %.3f", shooter.getNectarTurretServoPosition(), shooter.getPollenTurretServoPosition());
         telemetry.update();
 
     }

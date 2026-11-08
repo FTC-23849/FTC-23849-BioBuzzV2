@@ -1,36 +1,48 @@
 package org.firstinspires.ftc.teamcode.opmode.subsystems;
 
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.*;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class Turret {
-    public HardwareMap hwmap;
-    public ServoImplEx leftTurret, rightTurret;
-    Pose2D robotPos = null;
-    double robotAngleUnsigned;
+    public ServoImplEx frontTurret, backTurret;
+    Robot robot;
+    // true = nectar turret, false = pollen turret (picks which calibration constants to use)
+    public final boolean isNectar;
+    // distance from robot center to the turret pivot along the robot's front/back axis (+ = front)
+    public final double offsetFromCenter;
+
     boolean aimTurret = false;
     double turretPos = 0;
     double targetX = 0;
     double targetY = 0;
-    double turretAngle = 180;
-    Robot robot;
-    public Turret(HardwareMap hwmap, Robot robot){
-        this.hwmap = hwmap;
+    public double turretX = 0;
+    public double turretY = 0;
+    public double turretAngle = 180;
+
+    public Turret(Robot robot, double offsetFromCenter, ServoImplEx frontTurret, ServoImplEx backTurret, boolean isNectar){
         this.robot = robot;
+        this.offsetFromCenter = offsetFromCenter;
+        this.frontTurret = frontTurret;
+        this.backTurret = backTurret;
+        this.isNectar = isNectar;
     }
 
+    // per-turret calibration, read live so dashboard edits apply
+    double backCenterPos(){ return isNectar ? turretBackCenterPosNectar : turretBackCenterPosPollen; }
+    double servoDifference(){ return isNectar ? turretServoDifferenceNectar : turretServoDifferencePollen; }
+    double trim(){ return isNectar ? turretTrimNectar : turretTrimPollen; }
+    double rightLimit(){ return isNectar ? rightLimitNectar : rightLimitPollen; }
+    double leftLimit(){ return isNectar ? leftLimitNectar : leftLimitPollen; }
 
     public void init(){
-        leftTurret = hwmap.get(ServoImplEx.class, "leftTurret");
-        rightTurret = hwmap.get(ServoImplEx.class, "rightTurret");
-        leftTurret.setPwmRange(new PwmControl.PwmRange(500, 2500));
-        rightTurret.setPwmRange(new PwmControl.PwmRange(500, 2500));
+        frontTurret.setPwmRange(new PwmControl.PwmRange(500, 2500));
+        backTurret.setPwmRange(new PwmControl.PwmRange(500, 2500));
     }
 
     public void initLoop(){
@@ -45,34 +57,33 @@ public class Turret {
 
     }
 
+    // Field position of this turret's pivot. centerX/centerY are the robot center
+    // (field-centered inches), heading in degrees.
+    public double[] calculateTurretPos(double centerX, double centerY, double headingDeg){
+        double h = Math.toRadians(headingDeg);
+        return new double[]{
+                centerX + offsetFromCenter * Math.cos(h),
+                centerY + offsetFromCenter * Math.sin(h)
+        };
+    }
+
+    public double[] calculateTurretPos(Pose2D pos){
+        return calculateTurretPos(pos.getX(DistanceUnit.INCH), pos.getY(DistanceUnit.INCH), pos.getHeading(AngleUnit.DEGREES));
+    }
+
     public double[] calculateGoalPos(Pose2D pos){
-        double robotY = pos.getY(DistanceUnit.INCH);
-
-        //chooses target by picking the cell to aim at, and then
-        // picking a point in the hive cell with best angle
-        if(robot.alliance.equals("blue")){
-            if(robotY < 0){
-                //bottom right
-                return new double[]{13.1, -19.2};
-            }else{
-                //top right
-                return new double[]{13.1, 19.2};
-            }
-        }else{
-            if(robotY < 0){
-                //bottom left
-                return new double[]{-13.1, -19.2};
-            }else{
-                //top left
-                return new double[]{-13.1, 19.2};
-            }
-        }
+        return chooseGoal(pos.getY(DistanceUnit.INCH));
     }
+
+    // robotY in raw pedro coords (0-144)
     public double[] calculateGoalPos(double robotY){
-        robotY -= 72;
+        return chooseGoal(robotY - 72);
+    }
 
-        //chooses target by picking the cell to aim at, and then
-        // picking a point in the hive cell with best angle
+    //chooses target by picking the cell to aim at, and then
+    // picking a point in the hive cell with best angle
+    // (robotY is the robot center, field-centered, so both turrets pick the same cell)
+    double[] chooseGoal(double robotY){
         if(robot.alliance.equals("blue")){
             if(robotY < 0){
                 //bottom right
@@ -92,21 +103,20 @@ public class Turret {
         }
     }
 
-    public double calculateTurretServoPositionAuto(double robotX, double robotY, double robotAngleUnsigned){
-        double[] targetCoords = calculateGoalPos(robotY);
+    // Servo position (before trim/limits) to point this turret from (turretX, turretY) at the goal
+    double aimServoPosition(double turretX, double turretY, double robotAngleUnsigned, double[] goal){
+        this.turretX = turretX;
+        this.turretY = turretY;
+        targetX = goal[0];
+        targetY = goal[1];
 
-        targetX = targetCoords[0];
-        targetY = targetCoords[1];
-        robotX -= 72;
-        robotY -= 72;
-
-        turretAngle = Math.toDegrees(Math.atan2(targetY - robotY, targetX - robotX));
+        turretAngle = Math.toDegrees(Math.atan2(targetY - turretY, targetX - turretX));
         if(turretAngle < 0){
             turretAngle+=360;
         }
         turretAngle = ((turretAngle - robotAngleUnsigned) % 360 + 360) % 360;
 
-        double servoPosition = turretBackCenterPos - (turretAngle - 180)/turretRangeDeg;
+        double servoPosition = backCenterPos() - (turretAngle - 180)/turretRangeDeg;
 
         if (servoPosition < 0){
             servoPosition += 360 / turretRangeDeg;
@@ -114,73 +124,52 @@ public class Turret {
         if (servoPosition > 1){
             servoPosition -= 360 / turretRangeDeg;
         }
+        return servoPosition;
+    }
 
-        return Math.max(0.161, Math.min(servoPosition,0.894));
+    // robotX/robotY in raw pedro coords (0-144), heading in degrees (0-360)
+    public double calculateTurretServoPositionAuto(double robotX, double robotY, double robotAngleUnsigned){
+        double[] goal = calculateGoalPos(robotY);
+        double[] turret = calculateTurretPos(robotX - 72, robotY - 72, robotAngleUnsigned);
+        double servoPosition = aimServoPosition(turret[0], turret[1], robotAngleUnsigned, goal);
+        return Math.max(rightLimit(), Math.min(servoPosition, leftLimit()));
     }
 
     public double calculateTurretServoPosition(Pose2D pos, double robotAngleUnsigned){
-        double[] targetCoords = calculateGoalPos(pos);
-
-        targetX = targetCoords[0];
-        targetY = targetCoords[1];
-        double robotX = pos.getX(DistanceUnit.INCH);
-        double robotY = pos.getY(DistanceUnit.INCH);
-
-        turretAngle = Math.toDegrees(Math.atan2(targetY - robotY, targetX - robotX));
-        if(turretAngle < 0){
-            turretAngle+=360;
-        }
-        turretAngle = ((turretAngle - robotAngleUnsigned) % 360 + 360) % 360;
-
-        double servoPosition = turretBackCenterPos - (turretAngle - 180)/turretRangeDeg;
-
-        if (servoPosition < 0){
-            servoPosition += 360 / turretRangeDeg;
-        }
-        if (servoPosition > 1){
-            servoPosition -= 360 / turretRangeDeg;
-        }
-        servoPosition += turretOffset;
+        double[] goal = calculateGoalPos(pos);
+        double[] turret = calculateTurretPos(pos);
+        double servoPosition = aimServoPosition(turret[0], turret[1], robotAngleUnsigned, goal);
+        servoPosition += trim();
         servoPosition += robot.turretAdjustment;
 
-        return Math.max(rightLimit, Math.min(servoPosition,leftLimit));
+        return Math.max(rightLimit(), Math.min(servoPosition, leftLimit()));
+    }
+
+    void setTurret(double position){
+        turretPos = position;
+        frontTurret.setPosition(position);
+        backTurret.setPosition(position + servoDifference());
     }
 
     public void update(boolean aim){
         aimTurret = aim;
         if(aimTurret && robot.testingTurret){
-            turretPos = robot.turretPositionTesting;
-            leftTurret.setPosition(turretPos);
-            rightTurret.setPosition(turretPos + turretServoDifference);
+            setTurret(robot.turretPositionTesting);
         }else if(aimTurret){
-            robotPos = robot.dt.getRobotPos();
-            robotAngleUnsigned = robot.dt.getRobotAngle();
-            turretPos = calculateTurretServoPosition(robotPos, robotAngleUnsigned);
-            leftTurret.setPosition(turretPos);
-            rightTurret.setPosition(turretPos + turretServoDifference);
+            setTurret(calculateTurretServoPosition(robot.dt.getRobotPos(), robot.dt.getRobotAngle()));
         }else{
             //turret is centered, so it points straight backward relative to the robot
             turretAngle = 180;
-            leftTurret.setPosition(turretBackCenterPos);
-            rightTurret.setPosition(turretBackCenterPos + turretServoDifference);
+            setTurret(backCenterPos());
         }
     }
 
     public void update(double robotX, double robotY, double robotAngleUnsigned){
         aimTurret = true;
-        if(aimTurret && robot.testingTurret){
-            turretPos = robot.turretPositionTesting;
-            leftTurret.setPosition(turretPos);
-            rightTurret.setPosition(turretPos + turretServoDifference);
-        }else if(aimTurret){
-            turretPos = calculateTurretServoPositionAuto(robotX, robotY, robotAngleUnsigned);
-            leftTurret.setPosition(turretPos);
-            rightTurret.setPosition(turretPos + turretServoDifference);
+        if(robot.testingTurret){
+            setTurret(robot.turretPositionTesting);
         }else{
-            //turret is centered, so it points straight backward relative to the robot
-            turretAngle = 180;
-            leftTurret.setPosition(turretBackCenterPos);
-            rightTurret.setPosition(turretBackCenterPos + turretServoDifference);
+            setTurret(calculateTurretServoPositionAuto(robotX, robotY, robotAngleUnsigned));
         }
     }
 }

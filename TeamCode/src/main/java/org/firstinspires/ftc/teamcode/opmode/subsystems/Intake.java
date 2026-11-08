@@ -10,7 +10,7 @@ import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.*;
 public class Intake {
     public HardwareMap hwmap;
     public DcMotorEx leftIntake, rightIntake;
-    public ServoImplEx dropdownIntake, flowerIntake;
+    public ServoImplEx flowerIntake;
     public boolean running = false;
     public boolean outtaking = false;
     public Intake(HardwareMap hwmap){
@@ -37,24 +37,7 @@ public class Intake {
         rightIntake.setPower(0.0);
     }
 
-    public enum IntakeState {
-        UP,
-        DOWN,
-        FLOWER
-    }
-
-    public void runIntake(IntakeState intakeState){
-        switch (intakeState) {
-            case UP:
-                dropdownIntake.setPosition(dropDownIntakeUp);
-                break;
-            case DOWN:
-                dropdownIntake.setPosition(dropDownIntakeDown);
-                break;
-            case FLOWER:
-                dropdownIntake.setPosition(dropDownIntakeFlower);
-                break;
-        }
+    public void runIntake(){
         running = true;
         outtaking = false;
         leftIntake.setPower(intakePower);
@@ -69,14 +52,9 @@ public class Intake {
         flowerIntake.setPosition(flowerIntakeUp);
     }
 
-    public void dropdownUp(){
-        dropdownIntake.setPosition(dropDownIntakeUp);
-    }
-
     public void init(){
         leftIntake = hwmap.get(DcMotorEx.class, "leftIntake");
         rightIntake = hwmap.get(DcMotorEx.class, "rightIntake");
-        dropdownIntake = hwmap.get(ServoImplEx.class, "dropdownIntake");
         flowerIntake = hwmap.get(ServoImplEx.class, "flowerIntake");
         leftIntake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
