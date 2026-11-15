@@ -38,11 +38,15 @@ public class Drivetrain {
         RB.setPower((y + x - rx) / denominator);
     }
 
+    // Robot pushed into a corner with its back against the end wall and its side against the side wall.
+    // Center is (back-to-center) from the end wall and (side-to-center) from the side wall.
     public void relocalize(String alliance, boolean leftCorner){
+        double x = 72 - robotBackToCenter;
+        double y = 72 - robotSideToCenter;
         if(alliance.equals("blue")) {
-            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 66, leftCorner ? -66 : 66, AngleUnit.DEGREES, 180));
+            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, x, leftCorner ? -y : y, AngleUnit.DEGREES, 180));
         } else {
-            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, -66, leftCorner ? 66 : -66, AngleUnit.DEGREES, 0));
+            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, -x, leftCorner ? y : -y, AngleUnit.DEGREES, 0));
         }
     }
     public void recalibrate(){
@@ -86,15 +90,21 @@ public class Drivetrain {
         RB = hwmap.get(DcMotorEx.class, "RB");
         LF.setDirection(DcMotorEx.Direction.REVERSE);
         LB.setDirection(DcMotorEx.Direction.REVERSE);
+        brake();
+        pinpoint = hwmap.get(GoBildaPinpointDriver.class, "pinpoint");
+        // x offset = forward pod's sideways distance from center (left +)
+        // y offset = strafe pod's forward distance from center (forward +)
+        // values from the Pedro Pinpoint tuner, keep in sync with pedro/Constants.localizerConfig
+        pinpoint.setOffsets(2.800179128571758, 0.9196552516907219, DistanceUnit.INCH);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+    }
+
+    public void brake(){
         LF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         LB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         RF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         RB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        pinpoint = hwmap.get(GoBildaPinpointDriver.class, "pinpoint");
-        //TODO: set offsets/ encoder resolution
-        pinpoint.setOffsets(0,32.4111, DistanceUnit.MM);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-        pinpoint.setEncoderResolution(19.970472542, DistanceUnit.MM);
     }
 
     public void initLoop(){

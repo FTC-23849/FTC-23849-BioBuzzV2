@@ -12,9 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 public class Turret {
     public ServoImplEx frontTurret, backTurret;
     Robot robot;
-    // true = nectar turret, false = pollen turret (picks which calibration constants to use)
     public final boolean isNectar;
-    // distance from robot center to the turret pivot along the robot's front/back axis (+ = front)
     public final double offsetFromCenter;
 
     boolean aimTurret = false;
@@ -23,7 +21,7 @@ public class Turret {
     double targetY = 0;
     public double turretX = 0;
     public double turretY = 0;
-    public double turretAngle = 180;
+    public double turretAngle = 0;
 
     public Turret(Robot robot, double offsetFromCenter, ServoImplEx frontTurret, ServoImplEx backTurret, boolean isNectar){
         this.robot = robot;
@@ -33,8 +31,7 @@ public class Turret {
         this.isNectar = isNectar;
     }
 
-    // per-turret calibration, read live so dashboard edits apply
-    double backCenterPos(){ return isNectar ? turretBackCenterPosNectar : turretBackCenterPosPollen; }
+    double frontCenterPos(){ return isNectar ? turretFrontCenterPosNectar : turretFrontCenterPosPollen; }
     double servoDifference(){ return isNectar ? turretServoDifferenceNectar : turretServoDifferencePollen; }
     double trim(){ return isNectar ? turretTrimNectar : turretTrimPollen; }
     double rightLimit(){ return isNectar ? rightLimitNectar : rightLimitPollen; }
@@ -57,8 +54,6 @@ public class Turret {
 
     }
 
-    // Field position of this turret's pivot. centerX/centerY are the robot center
-    // (field-centered inches), heading in degrees.
     public double[] calculateTurretPos(double centerX, double centerY, double headingDeg){
         double h = Math.toRadians(headingDeg);
         return new double[]{
@@ -75,14 +70,12 @@ public class Turret {
         return chooseGoal(pos.getY(DistanceUnit.INCH));
     }
 
-    // robotY in raw pedro coords (0-144)
     public double[] calculateGoalPos(double robotY){
         return chooseGoal(robotY - 72);
     }
 
     //chooses target by picking the cell to aim at, and then
     // picking a point in the hive cell with best angle
-    // (robotY is the robot center, field-centered, so both turrets pick the same cell)
     double[] chooseGoal(double robotY){
         if(robot.alliance.equals("blue")){
             if(robotY < 0){
@@ -103,7 +96,6 @@ public class Turret {
         }
     }
 
-    // Servo position (before trim/limits) to point this turret from (turretX, turretY) at the goal
     double aimServoPosition(double turretX, double turretY, double robotAngleUnsigned, double[] goal){
         this.turretX = turretX;
         this.turretY = turretY;
@@ -116,7 +108,8 @@ public class Turret {
         }
         turretAngle = ((turretAngle - robotAngleUnsigned) % 360 + 360) % 360;
 
-        double servoPosition = backCenterPos() - (turretAngle - 180)/turretRangeDeg;
+        double signedAngle = turretAngle > 180 ? turretAngle - 360 : turretAngle;
+        double servoPosition = frontCenterPos() - signedAngle/turretRangeDeg;
 
         if (servoPosition < 0){
             servoPosition += 360 / turretRangeDeg;
@@ -127,7 +120,6 @@ public class Turret {
         return servoPosition;
     }
 
-    // robotX/robotY in raw pedro coords (0-144), heading in degrees (0-360)
     public double calculateTurretServoPositionAuto(double robotX, double robotY, double robotAngleUnsigned){
         double[] goal = calculateGoalPos(robotY);
         double[] turret = calculateTurretPos(robotX - 72, robotY - 72, robotAngleUnsigned);
@@ -158,9 +150,9 @@ public class Turret {
         }else if(aimTurret){
             setTurret(calculateTurretServoPosition(robot.dt.getRobotPos(), robot.dt.getRobotAngle()));
         }else{
-            //turret is centered, so it points straight backward relative to the robot
-            turretAngle = 180;
-            setTurret(backCenterPos());
+            //turret is centered, so it points straight forward relative to the robot
+            turretAngle = 0;
+            setTurret(frontCenterPos());
         }
     }
 

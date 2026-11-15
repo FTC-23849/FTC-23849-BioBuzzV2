@@ -64,6 +64,8 @@ public class Misc {
     }
 
     public boolean canShoot(String alliance){
+        //no limelight: assume we can shoot so auto doesn't wait forever or switch spots
+        if(limelight == null) return true;
         LLResult result = limelight.getLatestResult();
         if (result == null || !result.isValid()) return false;
         for (LLResultTypes.FiducialResult tag : result.getFiducialResults()) {
@@ -174,8 +176,11 @@ public class Misc {
     }
 
     public void init(){
-        limelight = hwmap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(0);
+        //optional: null if "limelight" isn't in the config, everything below skips it
+        limelight = hwmap.tryGet(Limelight3A.class, "limelight");
+        if(limelight != null){
+            limelight.pipelineSwitch(0);
+        }
         logging = logTele;
         led = hwmap.tryGet(ServoImplEx.class, "light");
         if(led != null){
@@ -190,11 +195,19 @@ public class Misc {
     }
 
     public void start(){
-        limelight.start();
+        if(limelight != null){
+            limelight.start();
+        }
+    }
+
+    public void stopLimelight(){
+        if(limelight != null){
+            limelight.stop();
+        }
     }
 
     public void stop(){
-        limelight.stop();
+        stopLimelight();
         closeLog();
     }
 

@@ -118,7 +118,7 @@ public class PathSelector {
         });
     }
 
-    // Same, but wait mechanismDelay ms after the path starts before dropping the flower/intake
+    // Same, but wait mechanismDelay ms after the path starts before dropping the flower/starting the intake
     public Command toPickup(Path fromPrimary, Path fromSecondary, boolean toFlower, double mechanismDelay) {
         return lazy(() -> {
             Path path = atPrimarySpot ? fromPrimary : fromSecondary;

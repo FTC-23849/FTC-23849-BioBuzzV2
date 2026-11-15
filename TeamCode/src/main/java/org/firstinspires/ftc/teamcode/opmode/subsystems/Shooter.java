@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -24,7 +25,6 @@ public class Shooter {
     public ServoImplEx nectarHood, pollenHood, stopper;
     Robot robot;
 
-    // Shot tables, "distance,velocity". Copied from v1 as a starting point, retune each unit.
     public static int numOfPointsRegressionNectar = 8;
     public static String[] shotPointsNectar = {
             "25,1040", "40,1120", "50,1200", "60,1300", "70,1350", "80,1390", "93,1440", "100,1480",
@@ -32,7 +32,7 @@ public class Shooter {
     };
     public static int numOfPointsRegressionPollen = 8;
     public static String[] shotPointsPollen = {
-            "25,1040", "40,1120", "50,1200", "60,1300", "70,1350", "80,1390", "93,1440", "100,1480",
+            "25,1340", "40,1420", "50,1500", "60,1600", "70,1650", "80,1690", "93,1740", "100,1780",
             "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
     };
     public static int maxShotCurveDegree = 3;
@@ -57,7 +57,6 @@ public class Shooter {
     ElapsedTime voltageTimer = new ElapsedTime();
     public double batteryVoltage = nominalVoltage;
 
-    // One fitted distance -> velocity curve. Re-fits only when the points or degree change.
     static class ShotTable {
         String[] parsedPoints = null;
         int parsedDegree = -1;
@@ -158,18 +157,15 @@ public class Shooter {
         return closeLaunchAngle + (thresholdAngle - closeLaunchAngle) * t;
     }
 
-    // hood angle (deg) for a launch angle, clamped to what the hood can do
     double hoodAngleFor(double launchAngle){
         return Math.max(hoodMinAngle, Math.min(hoodMaxAngle, 90 - launchAngle));
     }
 
-    // servo position for a hood angle, using that hood's endpoints
     double hoodServoPosition(double hoodAngle, double hoodUp, double hoodDown){
         double t = (hoodAngle - hoodMinAngle) / (hoodMaxAngle - hoodMinAngle);
         return hoodDown + t * (hoodUp - hoodDown);
     }
 
-    // Distance from each turret to the goal. Pose is the robot center (field-centered inches).
     void calculateTargetDists(Pose2D pos){
         double[] goal = robot.nectarTurret.calculateGoalPos(pos);
         double[] nectarPos = robot.nectarTurret.calculateTurretPos(pos);
@@ -177,7 +173,6 @@ public class Shooter {
         setTargets(goal, nectarPos, pollenPos);
     }
 
-    // Same, but robotX/robotY in raw pedro coords (0-144), heading in degrees
     public void calculateTargetDists(double robotX, double robotY, double headingDeg){
         double[] goal = robot.nectarTurret.calculateGoalPos(robotY);
         double[] nectarPos = robot.nectarTurret.calculateTurretPos(robotX - 72, robotY - 72, headingDeg);
@@ -194,7 +189,6 @@ public class Shooter {
         targetDistPollen = Math.hypot(goal[0] - pollenPos[0], goal[1] - pollenPos[1]);
     }
 
-    // One PIDF step for one flywheel. Returns the voltage-compensated power it sent.
     double runFlywheel(PIDFController pid, DcMotorEx motor, double currentVelocity, double targetVelocity,
                        double kP, double kI, double kD, double kS, double kV){
         //re-read gains every loop so FTC Dashboard edits apply live
@@ -232,6 +226,9 @@ public class Shooter {
         nectarHood = hwmap.get(ServoImplEx.class, "nectarHood");
         pollenHood = hwmap.get(ServoImplEx.class, "pollenHood");
         stopper = hwmap.get(ServoImplEx.class, "stopper");
+        nectarHood.setPwmRange(new PwmControl.PwmRange(500, 2500));
+        pollenHood.setPwmRange(new PwmControl.PwmRange(500, 2500));
+        stopper.setPwmRange(new PwmControl.PwmRange(500, 2500));
         flywheelPIDFNectar = new PIDFController(0, kPNectar, kINectar, kDNectar, kSNectar, kVNectar);
         flywheelPIDFPollen = new PIDFController(0, kPPollen, kIPollen, kDPollen, kSPollen, kVPollen);
         voltageSensor = hwmap.voltageSensor.iterator().next();
@@ -240,10 +237,8 @@ public class Shooter {
             batteryVoltage = nominalVoltage;
         }
         voltageTimer.reset();
-        // TODO: check on the robot that positive power spins each flywheel the shooting way,
-        //  and flip these if not. getVelocity() follows this direction, so no manual negation.
-        nectarShooter.setDirection(DcMotorSimple.Direction.FORWARD);
-        pollenShooter.setDirection(DcMotorSimple.Direction.FORWARD);
+        nectarShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        pollenShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         nectarHood.setPosition(hoodUpNectar);
         pollenHood.setPosition(hoodUpPollen);
     }
@@ -260,7 +255,6 @@ public class Shooter {
 
     }
 
-    // Sets both hoods from the current target distances
     void aimHoods(){
         launchAngleNectar = calculateLaunchAngle(targetDistNectar);
         launchAnglePollen = calculateLaunchAngle(targetDistPollen);
@@ -270,7 +264,6 @@ public class Shooter {
         pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
     }
 
-    // Runs both flywheels at their target velocities, or stops them
     void runFlywheels(boolean spin, double testingVelocity){
         if(spin && (robot.testingShooter || shotTableErrorNectar == null)){
             targetVelocityNectar = robot.testingShooter ? testingVelocity
@@ -322,7 +315,6 @@ public class Shooter {
         runFlywheels(aim, robot.flywheelSpeedTesting);
     }
 
-    // Auto: robotX/robotY in raw pedro coords (0-144), heading in degrees
     public void update(double robotX, double robotY, double headingDeg){
         refreshShotTables();
         updateBatteryVoltage();

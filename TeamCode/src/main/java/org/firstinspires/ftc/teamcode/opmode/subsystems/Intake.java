@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmode.subsystems;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.*;
@@ -56,7 +57,9 @@ public class Intake {
         leftIntake = hwmap.get(DcMotorEx.class, "leftIntake");
         rightIntake = hwmap.get(DcMotorEx.class, "rightIntake");
         flowerIntake = hwmap.get(ServoImplEx.class, "flowerIntake");
-        leftIntake.setDirection(DcMotorSimple.Direction.REVERSE);
+        flowerIntake.setPwmRange(new PwmControl.PwmRange(500, 2500));
+        leftIntake.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightIntake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void initLoop(){

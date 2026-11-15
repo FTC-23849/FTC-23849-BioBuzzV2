@@ -2,12 +2,13 @@ package org.firstinspires.ftc.teamcode.opmode.teleop;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.powerAdjustmentStep;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretAdjustmentStep;
-import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretBackCenterPosNectar;
+import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretFrontCenterPosNectar;
 
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Misc;
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
@@ -16,7 +17,8 @@ import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
 @TeleOp(name = "Main TeleOp")
 public class MainTeleOp extends OpMode {
     private Robot robot;
-    public static double turretPositionTesting = turretBackCenterPosNectar;
+    private Follower follower;
+    public static double turretPositionTesting = turretFrontCenterPosNectar;
     public static double flywheelSpeedTesting = 1200;
     public static double hoodPositionTesting = 0.25;
     public static boolean showServoStates = false;
@@ -33,6 +35,8 @@ public class MainTeleOp extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new Robot(hardwareMap, telemetry);
         robot.init();
+        follower = org.firstinspires.ftc.teamcode.opmode.Auto.pedro.Constants.create(hardwareMap);
+        robot.dt.brake();
     }
 
     @Override
@@ -48,7 +52,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void start() {
         robot.start();
-        robot.misc.limelight.stop();
+        robot.misc.stopLimelight();
         robot.misc.startLogging();
     }
 
@@ -101,10 +105,23 @@ public class MainTeleOp extends OpMode {
             }
         }
         telemetry.update();
-        robot.dt.driveRobot(gamepad1);
+        if(gamepad1.left_stick_button){
+            //locked pos
+            if(!follower.holding()){
+                follower.update();
+                follower.hold(follower.pose());
+            }
+            follower.update();
+        }else{
+            if(follower.holding()){
+                follower.stop();
+                robot.dt.brake();
+            }
+            robot.dt.driveRobot(gamepad1);
+        }
 
         if(gamepad1.backWasReleased()){
-            //toggle aiming (turret + shooter)
+            //toggle aiming (turrets + shooters)
             aim = !aim;
         }
 
@@ -115,7 +132,7 @@ public class MainTeleOp extends OpMode {
             //run intake
             robot.intake.runIntake();
         }else if(gamepad1.left_bumper){
-            //run intake with flower intake down (flower lowered below)
+            //run intake with flower intake down
             robot.intake.runIntake();
         }else if(gamepad1.a){
             //run intake in reverse
@@ -159,8 +176,6 @@ public class MainTeleOp extends OpMode {
             //recalibration
             robot.dt.recalibrate();
         }
-        //TODO: additional buttons like locked button / button remapping
-        //tbd controls, button for locked pos?
     }
 
     @Override

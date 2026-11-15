@@ -40,9 +40,9 @@ public class Constants {
     public static PinpointConfig localizerConfig = new PinpointConfig(c -> {
         c.name.set("pinpoint");
         c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        c.xPodOffset.set(1.4072287552000031);
-        c.yPodOffset.set(0.13511775985477478);
-        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.xPodOffset.set(2.800179128571758);
+        c.yPodOffset.set(0.9196552516907219);
+        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
         c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
         c.globalDistanceUnit.set(DistanceUnit.INCH);
         c.offsetUnits.set(DistanceUnit.INCH);

@@ -19,7 +19,7 @@ public class Constants {
     public static double flowerIntakeUp = 0.97;
     // Misc
 
-    // Shooter (values copied from v1 as a starting point, retune each unit)
+    // Shooter
     public static double blockBall = 0.510;
     public static double releaseBall = 0.380;
 
@@ -38,9 +38,9 @@ public class Constants {
     public static double nominalVoltage = 13.2;
     public static double maxIntegralPower = 0.2;
 
-    public static double hoodUpNectar = 0.1;
+    public static double hoodUpNectar = 0.01;
     public static double hoodDownNectar = 0.2;
-    public static double hoodUpPollen = 0.1;
+    public static double hoodUpPollen = 0.01;
     public static double hoodDownPollen = 0.2;
     public static double hoodMinAngle = 10;
     public static double hoodMaxAngle = 35;
@@ -54,17 +54,16 @@ public class Constants {
 
 
     // Turret
-    // Distance (inches) from the robot center to each turret's pivot, along the robot's
-    // front/back axis. Positive = in front of center, negative = behind. MEASURE THESE.
-    public static double nectarTurretOffset = 0;
-    public static double pollenTurretOffset = 0;
+    public static double nectarTurretOffset = 99.45547 / 25.4;
+    public static double pollenTurretOffset = -94.02523 / 25.4;
 
-    // Per-turret servo calibration (values copied from v1 as a starting point)
-    public static double turretBackCenterPosNectar = 0.456;
-    public static double turretBackCenterPosPollen = 0.456;
-    public static double turretServoDifferenceNectar = 0.017;
-    public static double turretServoDifferencePollen = 0.017;
-    // Servo position trim added after aiming (this was turretOffset in v1)
+    public static double robotSideToCenter = 208.728 / 25.4;
+    public static double robotBackToCenter = 172.35 / 25.4;
+
+    public static double turretFrontCenterPosNectar = 0.5;
+    public static double turretFrontCenterPosPollen = 0.5;
+    public static double turretServoDifferenceNectar = 0;
+    public static double turretServoDifferencePollen = 0;
     public static double turretTrimNectar = 0;
     public static double turretTrimPollen = 0;
     public static double rightLimitNectar = 0;
@@ -74,5 +73,5 @@ public class Constants {
 
     public static double turretAdjustmentStep = 0.01;
     public static double powerAdjustmentStep = 10;
-    public static double turretRangeDeg = 360 * (60/20) * (35.0/99);
+    public static double turretRangeDeg = 350 * (60.0/20) * (42.0/115);
 }

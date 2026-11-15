@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -56,6 +57,7 @@ public class HardwareTester extends OpMode {
         }
         for (int i = 0; i < SERVO_NAMES.length; i++) {
             servos[i] = hardwareMap.get(ServoImplEx.class, SERVO_NAMES[i]);
+            servos[i].setPwmRange(new PwmControl.PwmRange(500, 2500));
             //last commanded position, not the real position; just a starting point for the target
             double lastPos = servos[i].getPosition();
             if (Double.isNaN(lastPos)) {

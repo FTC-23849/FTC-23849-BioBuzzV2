@@ -157,7 +157,7 @@ public class RightAutoBasic extends OpMode {
         follower.update();
 
         robot = new Robot(hardwareMap);
-        robot.alliance = "red"; // TODO: confirm this is the correct alliance for this auto
+        robot.alliance = "red";
 
         intake = new Intake(hardwareMap);
         intake.init();

@@ -12,8 +12,6 @@ public class Shooter {
     private final Turret nectarTurret, pollenTurret;
     private final Misc misc;
 
-    // Uses the robot's own shooter and turrets, since the shooter needs the turrets'
-    // positions to work out each shooter's distance to the goal
     public Shooter(HardwareMap hwmap, Robot robot) {
         this.shooter = robot.shooter;
         this.nectarTurret = robot.nectarTurret;
@@ -51,7 +49,7 @@ public class Shooter {
         return shooter.pollenShooter.getPower();
     }
 
-    // Same distances the flywheels/hoods use (robotX/robotY raw pedro coords, heading in degrees)
+    // Same distances the flywheels/hoods use
     public double getNectarTargetDistance(double robotX, double robotY, double headingDeg) {
         shooter.calculateTargetDists(robotX, robotY, headingDeg);
         return shooter.targetDistNectar;
