@@ -252,13 +252,25 @@ public class Shooter {
 
     }
 
+    //linear hood: up pos at min dist, down pos at max dist, clamped
+    double linearHoodPosition(double dist, double hoodUp, double hoodDown){
+        double t = (dist - hoodLinearMinDist) / (hoodLinearMaxDist - hoodLinearMinDist);
+        t = Math.max(0, Math.min(1, t));
+        double pos = hoodUp + t * (hoodDown - hoodUp);
+        return Math.max(Math.min(hoodUp, hoodDown), Math.min(Math.max(hoodUp, hoodDown), pos));
+    }
+
     void aimHoods(){
-        launchAngleNectar = calculateLaunchAngle(targetDistNectar);
-        launchAnglePollen = calculateLaunchAngle(targetDistPollen);
-        hoodAngleNectar = hoodAngleFor(launchAngleNectar);
-        hoodAnglePollen = hoodAngleFor(launchAnglePollen);
-        nectarHood.setPosition(hoodServoPosition(hoodAngleNectar, hoodUpNectar, hoodDownNectar) - 0.07);
-        pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
+        //old angle based hood logic
+        //launchAngleNectar = calculateLaunchAngle(targetDistNectar);
+        //launchAnglePollen = calculateLaunchAngle(targetDistPollen);
+        //hoodAngleNectar = hoodAngleFor(launchAngleNectar);
+        //hoodAnglePollen = hoodAngleFor(launchAnglePollen);
+        //nectarHood.setPosition(hoodServoPosition(hoodAngleNectar, hoodUpNectar, hoodDownNectar) - 0.07);
+        //pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
+
+        nectarHood.setPosition(linearHoodPosition(targetDistNectar, hoodUpNectar, hoodDownNectar));
+        pollenHood.setPosition(linearHoodPosition(targetDistPollen, hoodUpPollen, hoodDownPollen));
     }
 
     void runFlywheels(boolean spin, double testingVelocityNectar, double testingVelocityPollen){

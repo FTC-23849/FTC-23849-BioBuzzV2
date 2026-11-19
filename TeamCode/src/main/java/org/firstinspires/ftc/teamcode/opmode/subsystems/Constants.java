@@ -39,11 +39,14 @@ public class Constants {
     public static double maxIntegralPower = 0.2;
 
     public static double hoodUpNectar = 0.36;
-    public static double hoodDownNectar = 0.62;
-    public static double hoodUpPollen = 0.01;
-    public static double hoodDownPollen = 0.2;
+    public static double hoodDownNectar = 0.56;
+    public static double hoodUpPollen = 0.05;
+    public static double hoodDownPollen = 0.25;
     public static double hoodMinAngle = 10;
     public static double hoodMaxAngle = 35;
+    //linear hood distances (inches)
+    public static double hoodLinearMinDist = 20;
+    public static double hoodLinearMaxDist = 90;
 
     public static double shooterHeight = 369 / 25.4;
     public static double hiveHeight = 60;
