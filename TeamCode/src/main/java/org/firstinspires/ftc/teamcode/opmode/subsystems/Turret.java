@@ -132,7 +132,7 @@ public class Turret {
         double[] turret = calculateTurretPos(pos);
         double servoPosition = aimServoPosition(turret[0], turret[1], robotAngleUnsigned, goal);
         servoPosition += trim();
-        servoPosition += robot.turretAdjustment;
+        servoPosition += isNectar ? robot.turretAdjustmentNectar : robot.turretAdjustmentPollen;
 
         return Math.max(rightLimit(), Math.min(servoPosition, leftLimit()));
     }

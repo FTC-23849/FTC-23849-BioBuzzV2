@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PwmControl;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -16,12 +17,11 @@ import org.firstinspires.ftc.teamcode.opmode.subsystems.Drivetrain;
 
 import java.util.List;
 
-// Controls (gamepad1):
-//   dpad up/down     select device
-//   motor selected:  left stick y = power (only while held), X = reset encoder
-//   servo selected:  dpad left/right = change target, bumpers = change step size,
-//                    A = enable servo + send target (then edits apply live), B = disable servo (goes limp)
-// Servos are never commanded until you press A, so nothing moves on init/start.
+//controls (gamepad1):
+//dpad up/down = select device
+//motor: left stick = power, X = reset encoder
+//servo: dpad left/right = target, bumpers = step size, A = enable, B = limp
+//servos don't move until you press A
 @TeleOp(name = "Hardware Tester", group = "Test")
 public class HardwareTester extends OpMode {
     static final String[] MOTOR_NAMES = {"LF", "RF", "LB", "RB", "leftIntake", "rightIntake", "nectarShooter", "pollenShooter"};
@@ -48,7 +48,7 @@ public class HardwareTester extends OpMode {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
-        //uses Drivetrain so motor directions and pinpoint setup match the real robot
+        //uses Drivetrain so motors and pinpoint match the robot
         dt = new Drivetrain(hardwareMap);
         dt.init();
 
@@ -58,7 +58,10 @@ public class HardwareTester extends OpMode {
         for (int i = 0; i < SERVO_NAMES.length; i++) {
             servos[i] = hardwareMap.get(ServoImplEx.class, SERVO_NAMES[i]);
             servos[i].setPwmRange(new PwmControl.PwmRange(500, 2500));
-            //last commanded position, not the real position; just a starting point for the target
+            if (SERVO_NAMES[i].equals("nectarHood")) {
+                servos[i].setDirection(Servo.Direction.REVERSE);
+            }
+            //last commanded pos not actual pos
             double lastPos = servos[i].getPosition();
             if (Double.isNaN(lastPos)) {
                 servoTargets[i] = 0.5;
@@ -83,7 +86,7 @@ public class HardwareTester extends OpMode {
             selected = (selected + 1) % deviceCount;
         }
 
-        //motors: only the selected one runs, and only while the stick is held
+        //only selected motor runs
         for (int i = 0; i < motors.length; i++) {
             if (i == selected) {
                 motors[i].setPower(-gamepad1.left_stick_y);
@@ -113,7 +116,7 @@ public class HardwareTester extends OpMode {
                 servoTargets[s] = Math.max(servoTargets[s] - STEP_SIZES[stepIndex], 0);
             }
             if (gamepad1.aWasPressed()) {
-                //set position first so enabling never jumps to a stale position
+                //set pos first so it doesnt jump
                 servos[s].setPosition(servoTargets[s]);
                 servos[s].setPwmEnable();
                 servoEnabled[s] = true;

@@ -97,8 +97,10 @@ public class Robot {
     public double hoodPositionTesting = hoodDownNectar;
     public double turretPositionTesting = 0;
     public double flywheelSpeedTesting = 0;
-    public double turretAdjustment = 0;
-    public double powerAdjustment = 0;
+    public double turretAdjustmentPollen = 0;
+    public double powerAdjustmentPollen = 0;
+    public double turretAdjustmentNectar = 0;
+    public double powerAdjustmentNectar = 0;
 
     public void update(boolean aim, boolean sotm, String Alliance){
         loopTime = loopTimer.milliseconds();
@@ -118,8 +120,10 @@ public class Robot {
 
     public void addTelemetry(){
         telemetry.addData("Loop time (ms)", loopTime);
-        telemetry.addData("Power Adjustment", powerAdjustment);
-        telemetry.addData("Turret Adjustment", turretAdjustment);
+        telemetry.addData("Pollen Power Adjustment", powerAdjustmentPollen);
+        telemetry.addData("Pollen Turret Adjustment", turretAdjustmentPollen);
+        telemetry.addData("Nectar Power Adjustment", powerAdjustmentNectar);
+        telemetry.addData("Nectar Turret Adjustment", turretAdjustmentNectar);
         telemetry.addData("Alliance", alliance);
         telemetry.addData("Aim", aim);
         telemetry.addData("Robot x", dt.getRobotPos().getX(DistanceUnit.INCH));

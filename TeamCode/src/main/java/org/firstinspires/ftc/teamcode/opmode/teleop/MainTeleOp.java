@@ -23,10 +23,13 @@ public class MainTeleOp extends OpMode {
     public static double hoodPositionTesting = 0.25;
     public static boolean showServoStates = false;
     public static boolean showCurrentDraw = false;
-    boolean testingShooter = false;
-    boolean testingTurret = false;
-    public static double turretAdjustment = 0;
-    public static double powerAdjustment = 0;
+    //gp2 dpad left/right or dashboard
+    public static boolean testingShooter = false;
+    public static boolean testingTurret = false;
+    public static double turretAdjustmentPollen = 0;
+    public static double powerAdjustmentPollen = 0;
+    public static double turretAdjustmentNectar = 0;
+    public static double powerAdjustmentNectar = 0;
     boolean aim = false;
     boolean sotm = false;
     String alliance = "red";
@@ -58,28 +61,66 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void loop() {
-        if(gamepad2.leftBumperWasReleased()){
-            //toggle testing, which switches from dynamic aiming and power to static aiming and power,
-            // for testing and if the robot break
-            testingShooter = !testingShooter;
-        }
-        if(gamepad2.rightBumperWasReleased()){
-            testingTurret = !testingTurret;
-        }
+        //pollen tuning
         if(gamepad2.startWasReleased()){
-            turretAdjustment += turretAdjustmentStep;
+            turretAdjustmentPollen += turretAdjustmentStep;
         }
         if(gamepad2.backWasReleased()){
-            turretAdjustment -= turretAdjustmentStep;
+            turretAdjustmentPollen -= turretAdjustmentStep;
         }
         if(gamepad2.dpadUpWasReleased()){
-            powerAdjustment += powerAdjustmentStep;
+            powerAdjustmentPollen += powerAdjustmentStep;
         }
         if(gamepad2.dpadDownWasReleased()){
-            powerAdjustment -= powerAdjustmentStep;
+            powerAdjustmentPollen -= powerAdjustmentStep;
         }
-        robot.turretAdjustment = turretAdjustment;
-        robot.powerAdjustment = powerAdjustment;
+        if(gamepad2.left_bumper){
+            //reset pollen power
+            powerAdjustmentPollen = 0;
+        }
+        if(gamepad2.left_trigger > 0.7){
+            //reset pollen turret
+            turretAdjustmentPollen = 0;
+        }
+
+        //nectar tuning
+        if(gamepad2.xWasReleased()){
+            //turret left
+            turretAdjustmentNectar += turretAdjustmentStep;
+        }
+        if(gamepad2.bWasReleased()){
+            //turret right
+            turretAdjustmentNectar -= turretAdjustmentStep;
+        }
+        if(gamepad2.yWasReleased()){
+            powerAdjustmentNectar += powerAdjustmentStep;
+        }
+        if(gamepad2.aWasReleased()){
+            powerAdjustmentNectar -= powerAdjustmentStep;
+        }
+        if(gamepad2.right_bumper){
+            //reset nectar power
+            powerAdjustmentNectar = 0;
+        }
+        if(gamepad2.right_trigger > 0.7){
+            //reset nectar turret
+            turretAdjustmentNectar = 0;
+        }
+
+        //locks
+        if(gamepad2.dpadLeftWasReleased()){
+            //lock turret
+            testingTurret = !testingTurret;
+        }
+        if(gamepad2.dpadRightWasReleased()){
+            //lock flywheel and hood
+            testingShooter = !testingShooter;
+        }
+
+        robot.turretAdjustmentPollen = turretAdjustmentPollen;
+        robot.powerAdjustmentPollen = powerAdjustmentPollen;
+        robot.turretAdjustmentNectar = turretAdjustmentNectar;
+        robot.powerAdjustmentNectar = powerAdjustmentNectar;
         robot.testingShooter = testingShooter;
         robot.testingTurret = testingTurret;
         robot.hoodPositionTesting = hoodPositionTesting;
@@ -89,6 +130,8 @@ public class MainTeleOp extends OpMode {
         robot.update(aim, sotm, alliance);
         robot.addTelemetry();
         telemetry.addData("cfg flywheelSpeedTesting", flywheelSpeedTesting);
+        telemetry.addData("Turret locked", testingTurret);
+        telemetry.addData("Flywheel locked", testingShooter);
         if(showServoStates){
             telemetry.addData("Flower intake servo pos", robot.intake.flowerIntake.getPosition());
             telemetry.addData("Nectar hood servo pos", robot.shooter.nectarHood.getPosition());

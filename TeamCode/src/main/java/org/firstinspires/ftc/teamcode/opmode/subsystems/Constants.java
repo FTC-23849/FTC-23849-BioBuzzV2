@@ -38,8 +38,8 @@ public class Constants {
     public static double nominalVoltage = 13.2;
     public static double maxIntegralPower = 0.2;
 
-    public static double hoodUpNectar = 0.01;
-    public static double hoodDownNectar = 0.2;
+    public static double hoodUpNectar = 0.36;
+    public static double hoodDownNectar = 0.62;
     public static double hoodUpPollen = 0.01;
     public static double hoodDownPollen = 0.2;
     public static double hoodMinAngle = 10;

@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PwmControl;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -25,15 +26,13 @@ public class Shooter {
     public ServoImplEx nectarHood, pollenHood, stopper;
     Robot robot;
 
-    public static int numOfPointsRegressionNectar = 8;
     public static String[] shotPointsNectar = {
-            "25,1040", "40,1120", "50,1200", "60,1300", "70,1350", "80,1390", "93,1440", "100,1480",
-            "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
+            "20,1624", "30,1706", "40,1820", "50,1940", "60,2090", "70,2160", "80,2230", "90,2314", "100,2380",
+            "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
     };
-    public static int numOfPointsRegressionPollen = 8;
     public static String[] shotPointsPollen = {
-            "25,1340", "40,1420", "50,1500", "60,1600", "70,1650", "80,1690", "93,1740", "100,1780",
-            "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
+            "20,1304", "30,1366", "40,1420", "50,1500", "60,1600", "70,1650", "80,1690", "90,1744", "100,1780",
+            "0,0", "0,0", "0,0", "0,0", "0,0", "0,0", "0,0"
     };
     public static int maxShotCurveDegree = 3;
 
@@ -63,36 +62,33 @@ public class Shooter {
         PolynomialFunction curve = null;
         String error = "table not parsed yet";
 
-        void refresh(String[] shotPoints, int numOfPoints, int maxDegree){
-            int count = Math.max(0, Math.min(numOfPoints, shotPoints.length));
-            String[] used = Arrays.copyOf(shotPoints, count);
-            if(Arrays.equals(used, parsedPoints) && maxDegree == parsedDegree){
+        void refresh(String[] shotPoints, int maxDegree){
+            if(Arrays.equals(shotPoints, parsedPoints) && maxDegree == parsedDegree){
                 return;
             }
-            parsedPoints = used;
+            parsedPoints = shotPoints.clone();
             parsedDegree = maxDegree;
             try{
-                double[] dists = new double[count];
-                double[] vels = new double[count];
-                for (int i = 0; i < count; i++) {
-                    String[] parts = used[i].split(",");
+                WeightedObservedPoints points = new WeightedObservedPoints();
+                int count = 0;
+                for (int i = 0; i < shotPoints.length; i++) {
+                    String[] parts = shotPoints[i].split(",");
                     if(parts.length != 2){
-                        throw new IllegalArgumentException("point " + i + " should be distance,velocity but is \"" + used[i] + "\"");
+                        throw new IllegalArgumentException("point " + i + " should be distance,velocity but is \"" + shotPoints[i] + "\"");
                     }
-                    dists[i] = Double.parseDouble(parts[0].trim());
-                    vels[i] = Double.parseDouble(parts[1].trim());
-                }
-                if(numOfPoints > count){
-                    throw new IllegalArgumentException("numOfPointsRegression is " + numOfPoints + " but list only holds " + count);
+                    double dist = Double.parseDouble(parts[0].trim());
+                    double vel = Double.parseDouble(parts[1].trim());
+                    //skip empty 0,0 slots
+                    if(dist == 0 && vel == 0){
+                        continue;
+                    }
+                    points.add(dist, vel);
+                    count++;
                 }
                 if(count < 2){
                     throw new IllegalArgumentException("need at least 2 points");
                 }
-                WeightedObservedPoints points = new WeightedObservedPoints();
-                for (int i = 0; i < dists.length; i++) {
-                    points.add(dists[i], vels[i]);
-                }
-                int degree = Math.max(1, Math.min(maxDegree, dists.length - 1));
+                int degree = Math.max(1, Math.min(maxDegree, count - 1));
                 curve = new PolynomialFunction(PolynomialCurveFitter.create(degree).fit(points.toList()));
                 error = null;
             }catch(Exception e){
@@ -124,8 +120,8 @@ public class Shooter {
     }
 
     void refreshShotTables(){
-        shotTableNectar.refresh(shotPointsNectar, numOfPointsRegressionNectar, maxShotCurveDegree);
-        shotTablePollen.refresh(shotPointsPollen, numOfPointsRegressionPollen, maxShotCurveDegree);
+        shotTableNectar.refresh(shotPointsNectar, maxShotCurveDegree);
+        shotTablePollen.refresh(shotPointsPollen, maxShotCurveDegree);
         shotTableErrorNectar = shotTableNectar.error;
         shotTableErrorPollen = shotTablePollen.error;
     }
@@ -239,6 +235,7 @@ public class Shooter {
         voltageTimer.reset();
         nectarShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         pollenShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        nectarHood.setDirection(Servo.Direction.REVERSE);
         nectarHood.setPosition(hoodUpNectar);
         pollenHood.setPosition(hoodUpPollen);
     }
@@ -260,14 +257,14 @@ public class Shooter {
         launchAnglePollen = calculateLaunchAngle(targetDistPollen);
         hoodAngleNectar = hoodAngleFor(launchAngleNectar);
         hoodAnglePollen = hoodAngleFor(launchAnglePollen);
-        nectarHood.setPosition(hoodServoPosition(hoodAngleNectar, hoodUpNectar, hoodDownNectar));
+        nectarHood.setPosition(hoodServoPosition(hoodAngleNectar, hoodUpNectar, hoodDownNectar) - 0.07);
         pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
     }
 
     void runFlywheels(boolean spin, double testingVelocity){
         if(spin && (robot.testingShooter || shotTableErrorNectar == null)){
             targetVelocityNectar = robot.testingShooter ? testingVelocity
-                    : Math.max(0, calculateShotSpeedNectar(targetDistNectar) + robot.powerAdjustment);
+                    : Math.max(0, calculateShotSpeedNectar(targetDistNectar) + robot.powerAdjustmentNectar);
             runFlywheel(flywheelPIDFNectar, nectarShooter, nectarVelocity, targetVelocityNectar,
                     kPNectar, kINectar, kDNectar, kSNectar, kVNectar);
         }else{
@@ -277,7 +274,7 @@ public class Shooter {
 
         if(spin && (robot.testingShooter || shotTableErrorPollen == null)){
             targetVelocityPollen = robot.testingShooter ? testingVelocity
-                    : Math.max(0, calculateShotSpeedPollen(targetDistPollen) + robot.powerAdjustment);
+                    : Math.max(0, calculateShotSpeedPollen(targetDistPollen) + robot.powerAdjustmentPollen);
             runFlywheel(flywheelPIDFPollen, pollenShooter, pollenVelocity, targetVelocityPollen,
                     kPPollen, kIPollen, kDPollen, kSPollen, kVPollen);
         }else{
