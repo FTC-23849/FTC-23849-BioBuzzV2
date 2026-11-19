@@ -23,16 +23,16 @@ public class Constants {
     public static double blockBall = 0.510;
     public static double releaseBall = 0.380;
 
-    public static double kPNectar = 0.003;
+    public static double kPNectar = 0.0035;
     public static double kINectar = 0.0;
     public static double kDNectar = 0.0;
-    public static double kSNectar = 0.15;
+    public static double kSNectar = 0.05;
     public static double kVNectar = 0.00030;
 
-    public static double kPPollen = 0.003;
+    public static double kPPollen = 0.0035;
     public static double kIPollen = 0.0;
     public static double kDPollen = 0.0;
-    public static double kSPollen = 0.15;
+    public static double kSPollen = 0.06;
     public static double kVPollen = 0.00030;
 
     public static double nominalVoltage = 13.2;

@@ -21,10 +21,10 @@ public class MainTeleOp extends OpMode {
     private Follower follower;
     public static double turretPositionTestingNectar = turretFrontCenterPosNectar;
     public static double turretPositionTestingPollen = turretFrontCenterPosPollen;
-    public static double flywheelSpeedTestingNectar = 1200;
-    public static double flywheelSpeedTestingPollen = 1200;
-    public static double hoodPositionTestingNectar = 0.25;
-    public static double hoodPositionTestingPollen = 0.25;
+    public static double flywheelSpeedTestingNectar = 2000;
+    public static double flywheelSpeedTestingPollen = 1600;
+    public static double hoodPositionTestingNectar = 0.36;
+    public static double hoodPositionTestingPollen = 0.1;
     public static boolean showServoStates = false;
     public static boolean showCurrentDraw = false;
     //gp2 dpad left/right or dashboard
