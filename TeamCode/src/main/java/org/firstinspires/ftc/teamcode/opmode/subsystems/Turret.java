@@ -146,7 +146,7 @@ public class Turret {
     public void update(boolean aim){
         aimTurret = aim;
         if(aimTurret && robot.testingTurret){
-            setTurret(robot.turretPositionTesting);
+            setTurret(isNectar ? robot.turretPositionTestingNectar : robot.turretPositionTestingPollen);
         }else if(aimTurret){
             setTurret(calculateTurretServoPosition(robot.dt.getRobotPos(), robot.dt.getRobotAngle()));
         }else{
@@ -159,7 +159,7 @@ public class Turret {
     public void update(double robotX, double robotY, double robotAngleUnsigned){
         aimTurret = true;
         if(robot.testingTurret){
-            setTurret(robot.turretPositionTesting);
+            setTurret(isNectar ? robot.turretPositionTestingNectar : robot.turretPositionTestingPollen);
         }else{
             setTurret(calculateTurretServoPositionAuto(robotX, robotY, robotAngleUnsigned));
         }

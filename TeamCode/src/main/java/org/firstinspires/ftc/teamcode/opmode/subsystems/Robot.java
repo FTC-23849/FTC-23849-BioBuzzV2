@@ -94,9 +94,12 @@ public class Robot {
 
     public boolean testingShooter = false;
     public boolean testingTurret = false;
-    public double hoodPositionTesting = hoodDownNectar;
-    public double turretPositionTesting = 0;
-    public double flywheelSpeedTesting = 0;
+    public double hoodPositionTestingNectar = hoodDownNectar;
+    public double hoodPositionTestingPollen = 0;
+    public double turretPositionTestingNectar = 0;
+    public double turretPositionTestingPollen = 0;
+    public double flywheelSpeedTestingNectar = 0;
+    public double flywheelSpeedTestingPollen = 0;
     public double turretAdjustmentPollen = 0;
     public double powerAdjustmentPollen = 0;
     public double turretAdjustmentNectar = 0;

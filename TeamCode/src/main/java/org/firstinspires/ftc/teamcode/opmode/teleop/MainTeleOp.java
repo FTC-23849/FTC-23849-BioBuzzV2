@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.powerAdjustmentStep;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretAdjustmentStep;
 import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretFrontCenterPosNectar;
+import static org.firstinspires.ftc.teamcode.opmode.subsystems.Constants.turretFrontCenterPosPollen;
 
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Misc;
 import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
@@ -18,9 +19,12 @@ import org.firstinspires.ftc.teamcode.opmode.subsystems.Robot;
 public class MainTeleOp extends OpMode {
     private Robot robot;
     private Follower follower;
-    public static double turretPositionTesting = turretFrontCenterPosNectar;
-    public static double flywheelSpeedTesting = 1200;
-    public static double hoodPositionTesting = 0.25;
+    public static double turretPositionTestingNectar = turretFrontCenterPosNectar;
+    public static double turretPositionTestingPollen = turretFrontCenterPosPollen;
+    public static double flywheelSpeedTestingNectar = 1200;
+    public static double flywheelSpeedTestingPollen = 1200;
+    public static double hoodPositionTestingNectar = 0.25;
+    public static double hoodPositionTestingPollen = 0.25;
     public static boolean showServoStates = false;
     public static boolean showCurrentDraw = false;
     //gp2 dpad left/right or dashboard
@@ -123,13 +127,17 @@ public class MainTeleOp extends OpMode {
         robot.powerAdjustmentNectar = powerAdjustmentNectar;
         robot.testingShooter = testingShooter;
         robot.testingTurret = testingTurret;
-        robot.hoodPositionTesting = hoodPositionTesting;
-        robot.turretPositionTesting = turretPositionTesting;
-        robot.flywheelSpeedTesting = flywheelSpeedTesting;
+        robot.hoodPositionTestingNectar = hoodPositionTestingNectar;
+        robot.hoodPositionTestingPollen = hoodPositionTestingPollen;
+        robot.turretPositionTestingNectar = turretPositionTestingNectar;
+        robot.turretPositionTestingPollen = turretPositionTestingPollen;
+        robot.flywheelSpeedTestingNectar = flywheelSpeedTestingNectar;
+        robot.flywheelSpeedTestingPollen = flywheelSpeedTestingPollen;
         robot.misc.showCurrentDraw = showCurrentDraw;
         robot.update(aim, sotm, alliance);
         robot.addTelemetry();
-        telemetry.addData("cfg flywheelSpeedTesting", flywheelSpeedTesting);
+        telemetry.addData("cfg flywheelSpeedTestingNectar", flywheelSpeedTestingNectar);
+        telemetry.addData("cfg flywheelSpeedTestingPollen", flywheelSpeedTestingPollen);
         telemetry.addData("Turret locked", testingTurret);
         telemetry.addData("Flywheel locked", testingShooter);
         if(showServoStates){

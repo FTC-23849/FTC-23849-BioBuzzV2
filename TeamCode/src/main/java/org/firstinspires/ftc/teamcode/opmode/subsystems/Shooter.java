@@ -261,9 +261,9 @@ public class Shooter {
         pollenHood.setPosition(hoodServoPosition(hoodAnglePollen, hoodUpPollen, hoodDownPollen));
     }
 
-    void runFlywheels(boolean spin, double testingVelocity){
+    void runFlywheels(boolean spin, double testingVelocityNectar, double testingVelocityPollen){
         if(spin && (robot.testingShooter || shotTableErrorNectar == null)){
-            targetVelocityNectar = robot.testingShooter ? testingVelocity
+            targetVelocityNectar = robot.testingShooter ? testingVelocityNectar
                     : Math.max(0, calculateShotSpeedNectar(targetDistNectar) + robot.powerAdjustmentNectar);
             runFlywheel(flywheelPIDFNectar, nectarShooter, nectarVelocity, targetVelocityNectar,
                     kPNectar, kINectar, kDNectar, kSNectar, kVNectar);
@@ -273,7 +273,7 @@ public class Shooter {
         }
 
         if(spin && (robot.testingShooter || shotTableErrorPollen == null)){
-            targetVelocityPollen = robot.testingShooter ? testingVelocity
+            targetVelocityPollen = robot.testingShooter ? testingVelocityPollen
                     : Math.max(0, calculateShotSpeedPollen(targetDistPollen) + robot.powerAdjustmentPollen);
             runFlywheel(flywheelPIDFPollen, pollenShooter, pollenVelocity, targetVelocityPollen,
                     kPPollen, kIPollen, kDPollen, kSPollen, kVPollen);
@@ -300,8 +300,8 @@ public class Shooter {
         readVelocities();
 
         if(robot.testingShooter){
-            nectarHood.setPosition(robot.hoodPositionTesting);
-            pollenHood.setPosition(robot.hoodPositionTesting);
+            nectarHood.setPosition(robot.hoodPositionTestingNectar);
+            pollenHood.setPosition(robot.hoodPositionTestingPollen);
         }else if(aim){
             aimHoods();
         }else{
@@ -309,7 +309,7 @@ public class Shooter {
             pollenHood.setPosition(hoodUpPollen);
         }
 
-        runFlywheels(aim, robot.flywheelSpeedTesting);
+        runFlywheels(aim, robot.flywheelSpeedTestingNectar, robot.flywheelSpeedTestingPollen);
     }
 
     public void update(double robotX, double robotY, double headingDeg){
@@ -321,12 +321,12 @@ public class Shooter {
         readVelocities();
 
         if(robot.testingShooter){
-            nectarHood.setPosition(robot.hoodPositionTesting);
-            pollenHood.setPosition(robot.hoodPositionTesting);
+            nectarHood.setPosition(robot.hoodPositionTestingNectar);
+            pollenHood.setPosition(robot.hoodPositionTestingPollen);
         }else{
             aimHoods();
         }
 
-        runFlywheels(true, robot.flywheelSpeedTesting - 60);
+        runFlywheels(true, robot.flywheelSpeedTestingNectar - 60, robot.flywheelSpeedTestingPollen - 60);
     }
 }
