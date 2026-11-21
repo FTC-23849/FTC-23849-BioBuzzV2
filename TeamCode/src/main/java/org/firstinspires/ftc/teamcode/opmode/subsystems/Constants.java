@@ -23,13 +23,13 @@ public class Constants {
     public static double blockBall = 0.510;
     public static double releaseBall = 0.380;
 
-    public static double kPNectar = 0.0035;
+    public static double kPNectar = 0.01;
     public static double kINectar = 0.0;
     public static double kDNectar = 0.0;
     public static double kSNectar = 0.05;
     public static double kVNectar = 0.00030;
 
-    public static double kPPollen = 0.0035;
+    public static double kPPollen = 0.0045;
     public static double kIPollen = 0.0;
     public static double kDPollen = 0.0;
     public static double kSPollen = 0.06;
@@ -38,10 +38,10 @@ public class Constants {
     public static double nominalVoltage = 13.2;
     public static double maxIntegralPower = 0.2;
 
-    public static double hoodUpNectar = 0.36;
-    public static double hoodDownNectar = 0.56;
-    public static double hoodUpPollen = 0.05;
-    public static double hoodDownPollen = 0.25;
+    public static double hoodUpNectar = 0.49;
+    public static double hoodDownNectar = 0.38;
+    public static double hoodUpPollen = 0.17;
+    public static double hoodDownPollen = 0.05;
     public static double hoodMinAngle = 10;
     public static double hoodMaxAngle = 35;
     //linear hood distances (inches)
@@ -57,13 +57,13 @@ public class Constants {
 
 
     // Turret
-    public static double nectarTurretOffset = 99.45547 / 25.4;
+    public static double nectarTurretOffset = 95.645732/ 25.4;
     public static double pollenTurretOffset = -94.02523 / 25.4;
 
     public static double robotSideToCenter = 208.728 / 25.4;
     public static double robotBackToCenter = 172.35 / 25.4;
 
-    public static double turretFrontCenterPosNectar = 0.5;
+    public static double turretFrontCenterPosNectar = 0.515;
     public static double turretFrontCenterPosPollen = 0.5;
     public static double turretServoDifferenceNectar = 0;
     public static double turretServoDifferencePollen = 0;
